@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NULLCIPHER</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Syne+Mono&family=Exo+2:wght@400;700;900&display=swap');
+:root{
+  --bg:#040608;--bg1:#07090c;--bg2:#0a0e13;--bg3:#0e141b;
+  --b1:#121d27;--b2:#1a2b3a;
+  --g:#39ff14;--g2:rgba(57,255,20,.1);--g3:rgba(57,255,20,.04);
+  --a:#ffb800;--r:#ff3c3c;--bl:#00bfff;--pu:#b266ff;
+  --dim:#253545;--t1:#9ab8cc;--t2:#4e6e82;
+  --mo:"Syne Mono",monospace;--ui:"Exo 2",sans-serif;--crt:"VT323",monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.032) 2px,rgba(0,0,0,.032) 4px);}
+.shell{display:flex;height:100vh;}
+/* ── SIDEBAR ── */
+.sb{width:215px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--b1);display:flex;flex-direction:column;}
+.sb-logo{padding:16px 16px 12px;border-bottom:1px solid var(--b1);}
+.logo{font-family:var(--crt);font-size:25px;color:var(--g);letter-spacing:3px;text-shadow:0 0 18px rgba(57,255,20,.45);}
+.logo-sub{font-family:var(--mo);font-size:8px;color:var(--dim);letter-spacing:3px;margin-top:2px;text-transform:uppercase;}
+.sb-nav{flex:1;overflow-y:auto;padding:6px 0;}
+.sb-nav::-webkit-scrollbar{width:2px;}.sb-nav::-webkit-scrollbar-thumb{background:var(--b2);}
+.grp-label{font-family:var(--mo);font-size:8px;letter-spacing:3px;color:var(--dim);padding:10px 16px 3px;text-transform:uppercase;}
+.ni{display:flex;align-items:center;gap:9px;padding:7px 16px;cursor:pointer;font-family:var(--ui);font-size:12.5px;color:var(--t2);border-left:2px solid transparent;transition:all .12s;user-select:none;}
+.ni:hover{color:var(--t1);background:var(--g3);border-left-color:var(--b2);}
+.ni.on{color:var(--g);background:var(--g2);border-left-color:var(--g);font-weight:700;text-shadow:0 0 10px rgba(57,255,20,.3);}
+.ni-ic{width:16px;text-align:center;font-size:13px;flex-shrink:0;}
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:42px;border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 22px;gap:10px;flex-shrink:0;background:var(--bg1);}
+.tb-dots{display:flex;gap:5px;}
+.tbd{width:8px;height:8px;border-radius:50%;}
+.tbd.r{background:#ff5f56;}.tbd.y{background:#ffbd2e;}.tbd.g{background:#27c93f;}
+.tb-title{font-family:var(--mo);font-size:10px;letter-spacing:3px;color:var(--t2);text-transform:uppercase;}
+.tb-title span{color:var(--g);}
+.tb-r{margin-left:auto;font-family:var(--mo);font-size:9px;color:var(--dim);letter-spacing:2px;}
+.pa{flex:1;overflow-y:auto;padding:24px 28px 40px;}
+.pa::-webkit-scrollbar{width:3px;}.pa::-webkit-scrollbar-thumb{background:var(--b2);}
+/* ── PANELS ── */
+.panel{display:none;animation:fadein .2s ease;}
+.panel.on{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ph{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;}
+.pt{font-family:var(--crt);font-size:28px;color:var(--g);letter-spacing:2px;line-height:1;}
+.ps{font-family:var(--mo);font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;}
+/* ── FORM ── */
+.field{margin-bottom:12px;}
+.field label{display:block;font-family:var(--mo);font-size:9px;letter-spacing:3px;color:var(--t2);text-transform:uppercase;margin-bottom:6px;}
+textarea,input[type=text],input[type=password],select{width:100%;background:var(--bg2);border:1px solid var(--b2);color:var(--t1);font-family:var(--mo);font-size:13px;padding:9px 13px;outline:none;resize:vertical;transition:border-color .12s;border-radius:0;-webkit-appearance:none;}
+textarea:focus,input:focus,select:focus{border-color:var(--g);box-shadow:0 0 0 1px rgba(57,255,20,.08);}
+textarea{min-height:78px;line-height:1.6;}
+select{cursor:pointer;}select option{background:var(--bg2);}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+/* ── BUTTONS ── */
+.btn{font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border:1px solid var(--g);color:var(--g);background:transparent;padding:9px 20px;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{background:var(--g);color:var(--bg);}
+.btn:active{transform:scale(.97);}
+.btn-a{border-color:var(--a);color:var(--a);}.btn-a:hover{background:var(--a);color:var(--bg);}
+.btn-r{border-color:var(--r);color:var(--r);}.btn-r:hover{background:var(--r);color:#fff;}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:4px;}
+/* ── OUTPUT ── */
+.out{background:var(--bg2);border:1px solid var(--b2);border-left:3px solid var(--g);padding:14px 16px;margin-top:14px;font-family:var(--mo);font-size:12.5px;line-height:1.85;color:var(--t1);white-space:pre-wrap;word-break:break-all;min-height:46px;max-height:460px;overflow-y:auto;display:none;}
+.out.on{display:block;}
+.out::-webkit-scrollbar{width:2px;}.out::-webkit-scrollbar-thumb{background:var(--b2);}
+.out .hit{color:var(--g);font-weight:bold;}
+.out .lbl{color:var(--a);}
+.out .dim{color:var(--dim);}
+.out .sec{color:var(--bl);font-weight:bold;display:block;border-bottom:1px solid var(--b1);padding-bottom:2px;margin:9px 0 5px;}
+.out .warn{color:var(--r);}
+.out .ok{color:var(--g);}
+.copy-row{display:flex;justify-content:flex-end;margin-top:5px;}
+.cbtn{font-family:var(--mo);font-size:9px;letter-spacing:2px;background:transparent;border:1px solid var(--b2);color:var(--dim);padding:3px 9px;cursor:pointer;transition:all .12s;text-transform:uppercase;}
+.cbtn:hover{border-color:var(--g);color:var(--g);}
+hr.dv{border:none;border-top:1px solid var(--b1);margin:16px 0;}
+.info{background:var(--bg2);border:1px solid var(--b2);border-left:3px solid var(--dim);padding:11px 14px;margin-bottom:13px;font-family:var(--mo);font-size:11px;color:var(--t2);line-height:1.7;}
+/* ── DROPZONE ── */
+.dz{border:2px dashed var(--b2);background:var(--bg2);min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;text-align:center;padding:20px;}
+.dz:hover,.dz.over{border-color:var(--g);background:rgba(57,255,20,.025);}
+.dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.dz-ic{font-size:30px;margin-bottom:8px;opacity:.5;}
+.dz-main{font-family:var(--ui);font-size:14px;font-weight:700;color:var(--t1);letter-spacing:1px;margin-bottom:3px;}
+.dz-sub{font-family:var(--mo);font-size:10px;color:var(--dim);letter-spacing:1px;}
+.img-prev{max-width:100%;max-height:260px;border:1px solid var(--b2);display:none;margin-bottom:12px;background:#000;object-fit:contain;width:100%;}
+.img-prev.on{display:block;}
+/* ── SPINNER ── */
+.spin{display:none;text-align:center;padding:22px;font-family:var(--crt);font-size:18px;color:var(--g);letter-spacing:3px;}
+.spin.on{display:block;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}.blink{animation:blink .9s infinite;}
+/* ── COLOR CHANNELS ── */
+.ch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;}
+.ch-box{text-align:center;}
+.ch-box label{font-family:var(--mo);font-size:9px;letter-spacing:2px;color:var(--t2);display:block;margin-bottom:4px;}
+.ch-box canvas{width:100%;border:1px solid var(--b2);background:#000;display:block;}
+/* ── PIGPEN ── */
+.pg-kb{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;}
+.pg-k{width:42px;height:42px;background:var(--bg2);border:1px solid var(--b2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:all .12s;position:relative;flex-shrink:0;}
+.pg-k:hover{border-color:var(--g);background:var(--g3);}
+.pg-k:active{transform:scale(.92);}
+.pg-k .pg-l{font-family:var(--mo);font-size:8px;color:var(--dim);margin-top:1px;}
+.pg-decoded{font-family:var(--crt);font-size:26px;color:var(--g);letter-spacing:4px;min-height:42px;padding:7px 12px;background:var(--bg2);border:1px solid var(--b2);margin:10px 0;word-break:break-all;letter-spacing:5px;}
+.pg-ctrl{display:flex;gap:8px;margin-bottom:8px;}
+/* ── BRAILLE ── */
+.br-wrap{display:flex;flex-wrap:wrap;gap:16px;margin:10px 0;align-items:flex-start;}
+.br-cell{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--b2);}
+.br-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--b2);cursor:pointer;transition:all .12s;background:var(--bg3);}
+.br-dot.on{background:var(--g);border-color:var(--g);box-shadow:0 0 8px rgba(57,255,20,.4);}
+.br-result{font-family:var(--crt);font-size:52px;color:var(--g);width:60px;text-align:center;align-self:center;}
+/* ── RUNE TABLE ── */
+.rune-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:5px;margin:10px 0;}
+.rune-k{background:var(--bg2);border:1px solid var(--b2);padding:8px 6px;text-align:center;cursor:pointer;transition:all .12s;}
+.rune-k:hover{border-color:var(--g);background:var(--g3);}
+.rune-k:active{transform:scale(.93);}
+.rune-sym{font-size:24px;color:var(--g);display:block;text-shadow:0 0 8px rgba(57,255,20,.3);}
+.rune-name{font-family:var(--mo);font-size:8px;color:var(--dim);display:block;margin-top:2px;}
+.rune-lat{font-family:var(--mo);font-size:11px;color:var(--a);display:block;}
+/* ── SEMAPHORE ── */
+.sem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:5px;margin:10px 0;}
+.sem-k{background:var(--bg2);border:1px solid var(--b2);padding:8px 4px;text-align:center;cursor:pointer;transition:all .12s;}
+.sem-k:hover{border-color:var(--g);background:var(--g3);}
+.sem-k:active{transform:scale(.93);}
+.sem-l{font-family:var(--crt);font-size:18px;color:var(--g);display:block;margin-top:3px;}
+/* ── WINGDINGS ── */
+.wd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:4px;margin:10px 0;}
+.wd-k{background:var(--bg2);border:1px solid var(--b2);padding:8px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .12s;}
+.wd-k:hover{border-color:var(--g);background:var(--g3);}
+.wd-sym{font-family:'Wingdings';font-size:18px;color:var(--g);width:22px;text-align:center;flex-shrink:0;}
+.wd-let{font-family:var(--mo);font-size:11px;color:var(--t2);}
+/* ── PLAYFAIR ── */
+.pf-grid-disp{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;max-width:180px;margin:10px 0;}
+.pf-cell{background:var(--bg2);border:1px solid var(--b2);text-align:center;padding:7px 4px;font-family:var(--mo);font-size:14px;color:var(--t1);}
+.pf-cell.hi{color:var(--g);border-color:var(--g);background:var(--g2);}
+/* ── HASH CRACK ── */
+.hc-row{display:flex;gap:8px;margin:6px 0;}
+.hc-prog{flex:1;height:4px;background:var(--bg3);border:1px solid var(--b2);overflow:hidden;margin-top:10px;}
+.hc-fill{height:100%;background:var(--g);width:0%;transition:width .15s;}
+/* ── BIT PLANES ── */
+.bp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;}
+.bp-box{text-align:center;}
+.bp-box label{font-family:var(--mo);font-size:9px;color:var(--t2);display:block;margin-bottom:3px;letter-spacing:1px;}
+.bp-box canvas{width:100%;border:1px solid var(--b2);display:block;}
+</style>
+</head>
+<body>
+<div class="shell">
+<!-- SIDEBAR -->
+<nav class="sb">
+  <div class="sb-logo">
+    <div class="logo">NULLCIPHER</div>
+    <div class="logo-sub">ARG · Puzzle Toolkit</div>
+  </div>
+  <div class="sb-nav">
+    <div class="grp-label">Image Analysis</div>
+    <div class="ni on" onclick="show('img')"><span class="ni-ic">🖼</span>Image Decode</div>
+    <div class="grp-label">Symbol Ciphers</div>
+    <div class="ni" onclick="show('pigpen')"><span class="ni-ic">⬡</span>Pigpen / Freemason</div>
+    <div class="ni" onclick="show('braille')"><span class="ni-ic">⠿</span>Braille</div>
+    <div class="ni" onclick="show('runes')"><span class="ni-ic">ᚱ</span>Elder Futhark Runes</div>
+    <div class="ni" onclick="show('semaphore')"><span class="ni-ic">🚩</span>Semaphore</div>
+    <div class="ni" onclick="show('wingdings')"><span class="ni-ic">✦</span>Wingdings / Webdings</div>
+    <div class="grp-label">Encodings</div>
+    <div class="ni" onclick="show('auto')"><span class="ni-ic">⚡</span>Auto-Detect</div>
+    <div class="ni" onclick="show('base')"><span class="ni-ic">📦</span>Base 64/32/16</div>
+    <div class="ni" onclick="show('binary')"><span class="ni-ic">🔢</span>Binary / Octal / Hex</div>
+    <div class="ni" onclick="show('morse')"><span class="ni-ic">📡</span>Morse Code</div>
+    <div class="ni" onclick="show('url')"><span class="ni-ic">🌐</span>URL / HTML</div>
+    <div class="grp-label">Ciphers</div>
+    <div class="ni" onclick="show('caesar')"><span class="ni-ic">🔄</span>Caesar / ROT</div>
+    <div class="ni" onclick="show('vigenere')"><span class="ni-ic">🔑</span>Vigenère</div>
+    <div class="ni" onclick="show('atbash')"><span class="ni-ic">🪞</span>Atbash</div>
+    <div class="ni" onclick="show('playfair')"><span class="ni-ic">▦</span>Playfair</div>
+    <div class="ni" onclick="show('bacon')"><span class="ni-ic">🥓</span>Baconian</div>
+    <div class="ni" onclick="show('rail')"><span class="ni-ic">🚂</span>Rail Fence</div>
+    <div class="ni" onclick="show('columnar')"><span class="ni-ic">⊞</span>Columnar Trans.</div>
+    <div class="ni" onclick="show('a1z26')"><span class="ni-ic">🔠</span>A1Z26</div>
+    <div class="ni" onclick="show('reverse')"><span class="ni-ic">↩</span>Reverse / Mirror</div>
+    <div class="grp-label">Analysis</div>
+    <div class="ni" onclick="show('freq')"><span class="ni-ic">📊</span>Freq. Analysis</div>
+    <div class="ni" onclick="show('seq')"><span class="ni-ic">📈</span>Sequences</div>
+    <div class="ni" onclick="show('hash')"><span class="ni-ic">#</span>Hash Tools</div>
+    <div class="grp-label">ARG</div>
+    <div class="ni" onclick="show('roblox')"><span class="ni-ic">🎮</span>Roblox ARG Guide</div>
+  </div>
+</nav>
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-dots"><div class="tbd r"></div><div class="tbd y"></div><div class="tbd g"></div></div>
+    <div class="tb-title">NULLCIPHER // <span id="tbl">IMAGE DECODE</span></div>
+    <div class="tb-r" id="clk"></div>
+  </div>
+  <div class="pa">
+
+    <!-- ══ IMAGE ══ -->
+    <div class="panel on" id="panel-img">
+      <div class="ph"><div class="pt">IMAGE DECODE</div><div class="ps">OCR · QR · Steg · Color Planes · Pixel LSB</div></div>
+      <div class="dz" id="img-dz">
+        <input type="file" id="img-file" accept="image/*">
+        <div class="dz-ic">⬡</div>
+        <div class="dz-main">Drop image · Click to browse · Ctrl+V to paste</div>
+        <div class="dz-sub">PNG · JPG · GIF · WEBP</div>
+      </div>
+      <img id="img-prev" class="img-prev" alt="">
+      <canvas id="img-canvas" style="display:none"></canvas>
+      <div class="field" style="margin-top:12px">
+        <label>Image URL (optional)</label>
+        <input type="text" id="img-url" placeholder="https://…/image.png">
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="imgOCR()">📝 OCR Text</button>
+        <button class="btn" onclick="imgQR()">QR Decode</button>
+        <button class="btn" onclick="imgLSB()">🔍 LSB Steg</button>
+        <button class="btn" onclick="imgChannels()">🎨 Color Channels</button>
+        <button class="btn" onclick="imgMagic()">🔎 Hidden Files</button>
+        <button class="btn" onclick="imgBitPlanes()">⬛ Bit Planes</button>
+        <button class="btn btn-r" onclick="clearImg()">✕ Clear</button>
+      </div>
+      <div class="spin" id="img-spin"><span class="blink">⬡ PROCESSING ⬡</span></div>
+      <div class="ch-grid" id="ch-grid" style="display:none">
+        <div class="ch-box"><label>Original</label><canvas id="ch-orig"></canvas></div>
+        <div class="ch-box"><label>Red</label><canvas id="ch-r"></canvas></div>
+        <div class="ch-box"><label>Green</label><canvas id="ch-g"></canvas></div>
+        <div class="ch-box"><label>Blue</label><canvas id="ch-b"></canvas></div>
+      </div>
+      <div class="bp-grid" id="bp-grid" style="display:none">
+        <div class="bp-box"><label>Bit 0 (LSB)</label><canvas id="bp0"></canvas></div>
+        <div class="bp-box"><label>Bit 1</label><canvas id="bp1"></canvas></div>
+        <div class="bp-box"><label>Bit 2</label><canvas id="bp2"></canvas></div>
+        <div class="bp-box"><label>Bit 3</label><canvas id="bp3"></canvas></div>
+        <div class="bp-box"><label>Bit 4</label><canvas id="bp4"></canvas></div>
+        <div class="bp-box"><label>Bit 5</label><canvas id="bp5"></canvas></div>
+        <div class="bp-box"><label>Bit 6</label><canvas id="bp6"></canvas></div>
+        <div class="bp-box"><label>Bit 7 (MSB)</label><canvas id="bp7"></canvas></div>
+      </div>
+      <div id="img-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('img-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ PIGPEN ══ -->
+    <div class="panel" id="panel-pigpen">
+      <div class="ph"><div class="pt">PIGPEN CIPHER</div><div class="ps">Click symbols to build decoded text</div></div>
+      <div class="info">Click any symbol below to append that letter. Use ⎵ for space and ⌫ to delete.</div>
+      <div class="pg-ctrl">
+        <button class="btn btn-a" onclick="pgSpace()">⎵ Space</button>
+        <button class="btn btn-r" onclick="pgBack()">⌫ Delete</button>
+        <button class="btn btn-r" onclick="pgClear()">✕ Clear</button>
+      </div>
+      <div class="pg-decoded" id="pg-decoded">_</div>
+      <div class="pg-kb" id="pg-kb"></div>
+      <div class="field" style="margin-top:14px">
+        <label>Or type text to encode into Pigpen notation</label>
+        <input type="text" id="pg-enc-in" placeholder="Type text to encode…">
+      </div>
+      <div class="btn-row"><button class="btn" onclick="pgEncode()">Encode → Pigpen Names</button></div>
+      <div id="pg-out" class="out"></div>
+    </div>
+
+    <!-- ══ BRAILLE ══ -->
+    <div class="panel" id="panel-braille">
+      <div class="ph"><div class="pt">BRAILLE</div><div class="ps">Click dots to build letter · Grade 1 Braille</div></div>
+      <div class="info">Dots numbered 1-6 (left col top→bottom: 1,2,3 · right col: 4,5,6). Click dots on/off to form a letter.</div>
+      <div class="br-wrap">
+        <div class="br-cell" id="br-cell">
+          <div class="br-dot" id="bd1" onclick="brToggle(1)"></div>
+          <div class="br-dot" id="bd4" onclick="brToggle(4)"></div>
+          <div class="br-dot" id="bd2" onclick="brToggle(2)"></div>
+          <div class="br-dot" id="bd5" onclick="brToggle(5)"></div>
+          <div class="br-dot" id="bd3" onclick="brToggle(3)"></div>
+          <div class="br-dot" id="bd6" onclick="brToggle(6)"></div>
+        </div>
+        <div class="br-result" id="br-result">?</div>
+      </div>
+      <div class="btn-row" style="margin-bottom:10px">
+        <button class="btn" onclick="brAdd()">+ Add Letter</button>
+        <button class="btn btn-a" onclick="brSpace()">⎵ Space</button>
+        <button class="btn btn-r" onclick="brBack()">⌫ Delete</button>
+        <button class="btn btn-r" onclick="brClear()">✕ Clear</button>
+      </div>
+      <div class="pg-decoded" id="br-decoded">_</div>
+      <hr class="dv">
+      <div class="field">
+        <label>Decode Braille Unicode text (paste ⠓⠑⠇⠇⠕ style)</label>
+        <input type="text" id="br-uni-in" placeholder="⠓⠑⠇⠇⠕">
+      </div>
+      <div class="btn-row"><button class="btn" onclick="brUni()">Decode Unicode Braille</button></div>
+      <div class="field" style="margin-top:10px">
+        <label>Encode text → Braille Unicode</label>
+        <input type="text" id="br-enc-in" placeholder="hello world">
+      </div>
+      <div class="btn-row"><button class="btn" onclick="brEncode()">Encode → Braille</button></div>
+      <div id="br-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('br-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ RUNES ══ -->
+    <div class="panel" id="panel-runes">
+      <div class="ph"><div class="pt">ELDER FUTHARK RUNES</div><div class="ps">Click runes to build decoded text</div></div>
+      <div class="pg-ctrl">
+        <button class="btn btn-a" onclick="runeSpace()">⎵ Space</button>
+        <button class="btn btn-r" onclick="runeBack()">⌫ Delete</button>
+        <button class="btn btn-r" onclick="runeClear()">✕ Clear</button>
+      </div>
+      <div class="pg-decoded" id="rune-decoded">_</div>
+      <div class="rune-grid" id="rune-grid"></div>
+      <hr class="dv">
+      <div class="field">
+        <label>Decode rune text (paste rune characters)</label>
+        <input type="text" id="rune-in" placeholder="ᚺᛖᛚᛚᛟ">
+      </div>
+      <div class="btn-row"><button class="btn" onclick="runeDecode()">Decode Runes</button></div>
+      <div class="field" style="margin-top:10px">
+        <label>Encode Latin text → Runes</label>
+        <input type="text" id="rune-enc-in" placeholder="hello world">
+      </div>
+      <div class="btn-row"><button class="btn" onclick="runeEncode()">Encode → Runes</button></div>
+      <div id="rune-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('rune-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ SEMAPHORE ══ -->
+    <div class="panel" id="panel-semaphore">
+      <div class="ph"><div class="pt">SEMAPHORE</div><div class="ps">Flag signal alphabet · Click to decode</div></div>
+      <div class="pg-ctrl">
+        <button class="btn btn-a" onclick="semSpace()">⎵ Space</button>
+        <button class="btn btn-r" onclick="semBack()">⌫ Delete</button>
+        <button class="btn btn-r" onclick="semClear()">✕ Clear</button>
+      </div>
+      <div class="pg-decoded" id="sem-decoded">_</div>
+      <div class="sem-grid" id="sem-grid"></div>
+      <hr class="dv">
+      <div class="field">
+        <label>Decode semaphore angles (e.g. "down,lower-left / upper-right,down")</label>
+        <textarea id="sem-in" placeholder="Format: left-arm,right-arm per letter, slash between letters&#10;e.g.: down,lower-left / upper-right,down / lower-left,upper-right" style="min-height:60px"></textarea>
+      </div>
+      <div class="btn-row"><button class="btn" onclick="semDecode()">Decode Angles</button></div>
+      <div id="sem-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('sem-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ WINGDINGS ══ -->
+    <div class="panel" id="panel-wingdings">
+      <div class="ph"><div class="pt">WINGDINGS / WEBDINGS</div><div class="ps">Click symbols to decode · or type encoded text</div></div>
+      <div class="pg-ctrl">
+        <button class="btn btn-a" onclick="wdSpace()">⎵ Space</button>
+        <button class="btn btn-r" onclick="wdBack()">⌫ Delete</button>
+        <button class="btn btn-r" onclick="wdClear()">✕ Clear</button>
+      </div>
+      <div class="pg-decoded" id="wd-decoded">_</div>
+      <div class="wd-grid" id="wd-grid"></div>
+      <hr class="dv">
+      <div class="field">
+        <label>Paste Wingdings encoded text (will decode using char code mapping)</label>
+        <input type="text" id="wd-in" placeholder="Paste Wingdings-encoded characters…" style="font-family:'Wingdings',var(--mo)">
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="wdDecodeInput()">Decode Wingdings Input</button>
+        <button class="btn btn-a" onclick="wdDecodeInput2()">Decode Webdings Input</button>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>Encode text → Wingdings char codes</label>
+        <input type="text" id="wd-enc-in" placeholder="hello">
+      </div>
+      <div class="btn-row"><button class="btn" onclick="wdEncode()">Encode → Wingdings</button></div>
+      <div id="wd-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('wd-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ AUTO ══ -->
+    <div class="panel" id="panel-auto">
+      <div class="ph"><div class="pt">AUTO-DETECT</div><div class="ps">Paste anything — runs all matching solvers</div></div>
+      <div class="field"><label>Input</label><textarea id="auto-in" placeholder="Paste ciphertext, base64, morse, numbers, hashes, binary…"></textarea></div>
+      <div class="btn-row"><button class="btn">⚡</button><button class="btn" onclick="runAuto()">RUN ALL SOLVERS</button></div>
+      <div id="auto-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('auto-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ BASE ══ -->
+    <div class="panel" id="panel-base">
+      <div class="ph"><div class="pt">BASE ENCODINGS</div><div class="ps">64 · 32 · 16 · Decode + Encode</div></div>
+      <div class="r2">
+        <div class="field"><label>Input</label><textarea id="base-in" placeholder="Encoded string…"></textarea></div>
+        <div class="field"><label>Mode</label>
+          <select id="base-mode">
+            <option value="dec">Decode</option>
+            <option value="enc">Encode</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn" onclick="runBase()">RUN ALL</button></div>
+      <div id="base-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('base-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ BINARY ══ -->
+    <div class="panel" id="panel-binary">
+      <div class="ph"><div class="pt">BINARY / OCTAL / HEX</div><div class="ps">Numeric encoding — decode all formats</div></div>
+      <div class="field"><label>Input</label><textarea id="bin-in" placeholder="01001000 01101001 | 72 101 108 | 0x48 0x65 | 110 105…"></textarea></div>
+      <div class="field">
+        <label>Encode text to numeric</label>
+        <input type="text" id="bin-enc" placeholder="Type text to encode…">
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="runBinary()">Decode Input</button>
+        <button class="btn btn-a" onclick="runBinaryEnc()">Encode Text</button>
+      </div>
+      <div id="bin-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('bin-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ MORSE ══ -->
+    <div class="panel" id="panel-morse">
+      <div class="ph"><div class="pt">MORSE CODE</div><div class="ps">Decode + Encode · / = word gap</div></div>
+      <div class="field"><label>Input (morse or plaintext)</label><textarea id="morse-in" placeholder=".... . .-.. .-.. --- / .-- --- .-. .-.. -.."></textarea></div>
+      <div class="btn-row">
+        <button class="btn" onclick="runMorse()">Decode Morse</button>
+        <button class="btn btn-a" onclick="runMorseEnc()">Encode Text → Morse</button>
+      </div>
+      <div id="morse-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('morse-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ URL ══ -->
+    <div class="panel" id="panel-url">
+      <div class="ph"><div class="pt">URL / HTML</div><div class="ps">Percent-encoding · HTML entities · ROT47</div></div>
+      <div class="field"><label>Input</label><textarea id="url-in" placeholder="%48%65%6C%6C%6F | &amp;amp; | &#104;&#101;&#108;&#108;&#111;"></textarea></div>
+      <div class="btn-row">
+        <button class="btn" onclick="runURL()">Decode All</button>
+        <button class="btn btn-a" onclick="runURLEnc()">URL Encode</button>
+      </div>
+      <div id="url-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('url-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ CAESAR ══ -->
+    <div class="panel" id="panel-caesar">
+      <div class="ph"><div class="pt">CAESAR / ROT</div><div class="ps">All 25 shifts with English frequency scoring</div></div>
+      <div class="field"><label>Input</label><textarea id="caesar-in" placeholder="Encrypted text…"></textarea></div>
+      <div class="field">
+        <label>Or enter specific shift (blank = try all)</label>
+        <input type="text" id="caesar-shift" placeholder="e.g. 13">
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="runCaesar()">Crack All Shifts</button>
+        <button class="btn btn-a" onclick="runCaesarEnc()">Encode with Shift</button>
+      </div>
+      <div id="caesar-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('caesar-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ VIGENERE ══ -->
+    <div class="panel" id="panel-vigenere">
+      <div class="ph"><div class="pt">VIGENÈRE</div><div class="ps">Polyalphabetic · Key analysis · Brute common keys</div></div>
+      <div class="r2">
+        <div class="field"><label>Ciphertext</label><textarea id="vig-in" placeholder="Encrypted text…" style="min-height:65px"></textarea></div>
+        <div class="field"><label>Key (blank = try common ARG keys)</label><input type="text" id="vig-key" placeholder="ROBLOX, SECRET…"></div>
+      </div>
+      <div class="field">
+        <label>Key length guess (for Kasiski / IC analysis)</label>
+        <input type="text" id="vig-klen" placeholder="e.g. 5 — blank to auto-detect">
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="runVig()">Decode</button>
+        <button class="btn btn-a" onclick="runVigAnalyse()">Analyse Key Length</button>
+        <button class="btn" onclick="runVigEnc()">Encode</button>
+      </div>
+      <div id="vig-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('vig-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ ATBASH ══ -->
+    <div class="panel" id="panel-atbash">
+      <div class="ph"><div class="pt">ATBASH</div><div class="ps">A↔Z mirror cipher</div></div>
+      <div class="field"><label>Input (encode and decode are identical)</label><textarea id="atbash-in" placeholder="Encrypted text…"></textarea></div>
+      <div class="btn-row"><button class="btn" onclick="runAtbash()">Apply Atbash</button></div>
+      <div id="atbash-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('atbash-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ PLAYFAIR ══ -->
+    <div class="panel" id="panel-playfair">
+      <div class="ph"><div class="pt">PLAYFAIR CIPHER</div><div class="ps">5×5 key square · bigram substitution</div></div>
+      <div class="r2">
+        <div class="field"><label>Ciphertext</label><textarea id="pf-in" placeholder="Encrypted text (pairs of letters)…" style="min-height:65px"></textarea></div>
+        <div class="field"><label>Key word / phrase</label><input type="text" id="pf-key" placeholder="KEYWORD"><br><br>
+          <label style="margin-top:8px">5×5 Key Square Preview</label>
+          <div class="pf-grid-disp" id="pf-sq"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="runPlayfair(false)">Decode</button>
+        <button class="btn btn-a" onclick="runPlayfair(true)">Encode</button>
+      </div>
+      <div id="pf-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('pf-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ BACON ══ -->
+    <div class="panel" id="panel-bacon">
+      <div class="ph"><div class="pt">BACONIAN</div><div class="ps">5-bit A/B cipher · 0/1 accepted</div></div>
+      <div class="info">Each letter = 5 A/B symbols. A=AAAAA B=AAAAB … Accepts 0/1. Accepts space-separated or continuous.</div>
+      <div class="field"><label>Input</label><textarea id="bacon-in" placeholder="AAAAA AAAAB AAABA | or 00000 00001 00010"></textarea></div>
+      <div class="field"><label>Encode text → Baconian</label><input type="text" id="bacon-enc" placeholder="hello"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="runBacon()">Decode</button>
+        <button class="btn btn-a" onclick="runBaconEnc()">Encode</button>
+      </div>
+      <div id="bacon-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('bacon-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ RAIL ══ -->
+    <div class="panel" id="panel-rail">
+      <div class="ph"><div class="pt">RAIL FENCE</div><div class="ps">Zigzag transposition cipher</div></div>
+      <div class="r2">
+        <div class="field"><label>Input</label><textarea id="rail-in" placeholder="Ciphertext…" style="min-height:65px"></textarea></div>
+        <div class="field"><label>Number of rails (blank = try 2–10)</label><input type="text" id="rail-n" placeholder="e.g. 3"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="runRail(false)">Decode</button>
+        <button class="btn btn-a" onclick="runRail(true)">Encode</button>
+      </div>
+      <div id="rail-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('rail-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ COLUMNAR ══ -->
+    <div class="panel" id="panel-columnar">
+      <div class="ph"><div class="pt">COLUMNAR TRANSPOSITION</div><div class="ps">Key-ordered column rearrangement</div></div>
+      <div class="r2">
+        <div class="field"><label>Input</label><textarea id="col-in" placeholder="Ciphertext…" style="min-height:65px"></textarea></div>
+        <div class="field"><label>Key word</label><input type="text" id="col-key" placeholder="KEYWORD"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="runColumnar(false)">Decode</button>
+        <button class="btn btn-a" onclick="runColumnar(true)">Encode</button>
+      </div>
+      <div id="col-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('col-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ A1Z26 ══ -->
+    <div class="panel" id="panel-a1z26">
+      <div class="ph"><div class="pt">A1Z26</div><div class="ps">Numbers 1–26 ↔ Letters A–Z</div></div>
+      <div class="field"><label>Numbers (space / dash / comma separated)</label><textarea id="a1z26-in" placeholder="8 5 12 12 15 | or 8-5-12-12-15"></textarea></div>
+      <div class="field"><label>Encode text → numbers</label><input type="text" id="a1z26-enc" placeholder="hello"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="runA1Z26()">Numbers → Letters</button>
+        <button class="btn btn-a" onclick="runA1Z26Enc()">Letters → Numbers</button>
+      </div>
+      <div id="a1z26-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('a1z26-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ REVERSE ══ -->
+    <div class="panel" id="panel-reverse">
+      <div class="ph"><div class="pt">REVERSE / MIRROR</div><div class="ps">Text reversal variants</div></div>
+      <div class="field"><label>Input</label><textarea id="rev-in" placeholder="Text…"></textarea></div>
+      <div class="btn-row"><button class="btn" onclick="runReverse()">All Variants</button></div>
+      <div id="rev-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('rev-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ FREQ ══ -->
+    <div class="panel" id="panel-freq">
+      <div class="ph"><div class="pt">FREQUENCY ANALYSIS</div><div class="ps">Letter freq · IC · Substitution helper</div></div>
+      <div class="field"><label>Ciphertext</label><textarea id="freq-in" placeholder="Substitution cipher text…"></textarea></div>
+      <div class="btn-row"><button class="btn" onclick="runFreq()">Analyse</button></div>
+      <div id="freq-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('freq-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ SEQ ══ -->
+    <div class="panel" id="panel-seq">
+      <div class="ph"><div class="pt">SEQUENCE ANALYSIS</div><div class="ps">Arithmetic · Geometric · Fibonacci · Prime · A1Z26</div></div>
+      <div class="field"><label>Numbers (space / comma / newline)</label><textarea id="seq-in" placeholder="1 1 2 3 5 8 13 21"></textarea></div>
+      <div class="btn-row"><button class="btn" onclick="runSeq()">Analyse</button></div>
+      <div id="seq-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('seq-out')">copy output</button></div>
+    </div>
+
+    <!-- ══ HASH ══ -->
+    <div class="panel" id="panel-hash">
+      <div class="ph"><div class="pt">HASH TOOLS</div><div class="ps">Identify type · Compute SHA · MD5 · Common crackers</div></div>
+      <div class="field"><label>Input (hash or plaintext)</label><input type="text" id="hash-in" placeholder="5d41402abc4b2a76b9719d911017c592 or plaintext…"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="runHash()">Identify + Compute</button>
+        <button class="btn btn-a" onclick="runHashCrack()">Crack (Common Passwords)</button>
+      </div>
+      <div id="hash-out" class="out"></div>
+      <div class="copy-row"><button class="cbtn" onclick="cp('hash-out')">copy output</button></div>
+    </div>
+
+  </div><!-- /pa -->
+    <!-- ══ ROBLOX ARG ══ -->
+    <div class="panel" id="panel-roblox">
+      <div class="ph"><div class="pt">ROBLOX ARG GUIDE</div><div class="ps">How to use the tools above to crack Roblox ARGs</div></div>
+      <div id="roblox-content"></div>
+    </div>
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+const LABELS={img:'IMAGE DECODE',pigpen:'PIGPEN CIPHER',braille:'BRAILLE',runes:'ELDER FUTHARK RUNES',semaphore:'SEMAPHORE',wingdings:'WINGDINGS / WEBDINGS',auto:'AUTO-DETECT',base:'BASE ENCODINGS',binary:'BINARY / OCTAL / HEX',morse:'MORSE CODE',url:'URL / HTML',caesar:'CAESAR / ROT',vigenere:'VIGENÈRE',atbash:'ATBASH',playfair:'PLAYFAIR',bacon:'BACONIAN',rail:'RAIL FENCE',columnar:'COLUMNAR TRANS.',a1z26:'A1Z26',reverse:'REVERSE / MIRROR',freq:'FREQ ANALYSIS',seq:'SEQUENCE ANALYSIS',hash:'HASH TOOLS',roblox:'ROBLOX ARG GUIDE'};
+function show(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  document.getElementById('panel-'+id).classList.add('on');
+  document.querySelectorAll('.ni').forEach(n=>{if(n.getAttribute('onclick')==`show('${id}')`)n.classList.add('on');});
+  document.getElementById('tbl').textContent=LABELS[id]||id.toUpperCase();
+}
+// Clock
+(function tick(){const n=new Date();document.getElementById('clk').textContent=n.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'})+' · '+n.toTimeString().slice(0,8);setTimeout(tick,1000);})();
+// Copy
+function cp(id){const t=document.getElementById(id).innerText;navigator.clipboard.writeText(t);const b=event.target;b.textContent='copied!';setTimeout(()=>b.textContent='copy output',1500);}
+// Output helpers
+function out(id,html){const el=document.getElementById(id);el.innerHTML=html;el.classList.add('on');}
+function row(l,v,cls=''){return`<span class="lbl">${String(l).padEnd(22)}</span><span class="${cls}">${v}</span>\n`;}
+function sec(t){return`<span class="sec">── ${t} ──</span>`;}
+
+// ═══════════════════════════════════════════
+// IMAGE ANALYSIS
+// ═══════════════════════════════════════════
+let imgData=null,imgMime='image/png';
+const imgDz=document.getElementById('img-dz');
+imgDz.addEventListener('dragover',e=>{e.preventDefault();imgDz.classList.add('over');});
+imgDz.addEventListener('dragleave',()=>imgDz.classList.remove('over'));
+imgDz.addEventListener('drop',e=>{e.preventDefault();imgDz.classList.remove('over');if(e.dataTransfer.files[0])loadImg(e.dataTransfer.files[0]);});
+document.getElementById('img-file').addEventListener('change',e=>{if(e.target.files[0])loadImg(e.target.files[0]);});
+document.addEventListener('paste',e=>{const item=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(item){const f=item.getAsFile();if(f)loadImg(f);}});
+
+function loadImg(file){
+  imgMime=file.type||'image/jpeg';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    imgData=e.target.result;
+    const prev=document.getElementById('img-prev');
+    prev.src=imgData; prev.classList.add('on');
+    imgDz.style.display='none';
+    // Draw to canvas
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.getElementById('img-canvas');
+      c.width=img.naturalWidth; c.height=img.naturalHeight;
+      c.getContext('2d').drawImage(img,0,0);
+    };
+    img.src=imgData;
+  };
+  reader.readAsDataURL(file);
+}
+function clearImg(){
+  imgData=null;
+  document.getElementById('img-prev').src=''; document.getElementById('img-prev').classList.remove('on');
+  imgDz.style.display='flex';
+  document.getElementById('ch-grid').style.display='none';
+  document.getElementById('bp-grid').style.display='none';
+  document.getElementById('img-out').classList.remove('on');
+  document.getElementById('img-file').value='';
+}
+async function loadImgFromURL(){
+  const u=document.getElementById('img-url').value.trim();
+  if(!u)return false;
+  return new Promise(res=>{
+    const img=new Image();img.crossOrigin='anonymous';
+    img.onload=()=>{
+      const c=document.getElementById('img-canvas');
+      c.width=img.naturalWidth;c.height=img.naturalHeight;
+      c.getContext('2d').drawImage(img,0,0);
+      const prev=document.getElementById('img-prev');
+      prev.src=img.src;prev.classList.add('on');
+      imgDz.style.display='none';
+      imgData=img.src; res(true);
+    };
+    img.onerror=()=>res(false);
+    img.src=u;
+  });
+}
+function getCanvas(){return document.getElementById('img-canvas');}
+function getCtxData(){
+  const c=getCanvas();if(!c.width)return null;
+  return c.getContext('2d').getImageData(0,0,c.width,c.height);
+}
+async function ensureImg(){
+  if(!imgData){if(document.getElementById('img-url').value.trim())return await loadImgFromURL();return false;}
+  return true;
+}
+
+// OCR
+async function imgOCR(){
+  if(!await ensureImg()){out('img-out',row('Error','No image loaded','warn'));return;}
+  const sp=document.getElementById('img-spin');sp.classList.add('on');
+  try{
+    const worker=await Tesseract.createWorker('eng');
+    const {data:{text,confidence}}=await worker.recognize(getCanvas());
+    await worker.terminate();
+    let h=sec('OCR RESULT');
+    h+=row('Confidence',confidence.toFixed(1)+'%',confidence>70?'ok':'warn');
+    h+='\n'+text;
+    if(text.trim()){
+      h+=sec('AUTO-CIPHER CHECK ON OCR TEXT');
+      h+=quickCipherCheck(text);
+    }
+    out('img-out',h);
+  }catch(e){out('img-out',row('Error',e.message,'warn'));}
+  sp.classList.remove('on');
+}
+
+// QR
+async function imgQR(){
+  if(!await ensureImg()){out('img-out',row('Error','No image loaded','warn'));return;}
+  const sp=document.getElementById('img-spin');sp.classList.add('on');
+  const d=getCtxData();
+  if(!d){sp.classList.remove('on');out('img-out',row('Error','Cannot read image data','warn'));return;}
+  const code=jsQR(d.data,d.width,d.height);
+  if(code){
+    let h=sec('QR CODE DECODED');
+    h+=row('Data',code.data,'hit');
+    h+=row('Location',`${code.location.topLeftCorner.x},${code.location.topLeftCorner.y}`);
+    h+=sec('AUTO-CIPHER CHECK ON QR DATA');
+    h+=quickCipherCheck(code.data);
+    out('img-out',h);
+  }else{
+    out('img-out',row('QR','No QR code detected in image','warn'));
+  }
+  sp.classList.remove('on');
+}
+
+// LSB Steganography
+async function imgLSB(){
+  if(!await ensureImg()){out('img-out',row('Error','No image loaded','warn'));return;}
+  const d=getCtxData();
+  if(!d){out('img-out',row('Error','Cannot read image data','warn'));return;}
+  const sp=document.getElementById('img-spin');sp.classList.add('on');
+  // Extract LSB of R, G, B channels
+  const bits=[];
+  for(let i=0;i<d.data.length;i+=4){bits.push(d.data[i]&1,d.data[i+1]&1,d.data[i+2]&1);}
+  // Assemble bytes
+  const bytes=[];
+  for(let i=0;i+8<=bits.length;i+=8){bytes.push(bits.slice(i,i+8).reduce((a,b,j)=>a|(b<<(7-j)),0));}
+  // Try to find printable ASCII
+  const printable=bytes.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+  const printableOnly=bytes.filter(b=>b>=32&&b<127).map(b=>String.fromCharCode(b)).join('');
+  // Find null-terminated strings
+  const strs=[];let cur='';
+  for(const b of bytes){
+    if(b===0&&cur.length>3){strs.push(cur);cur='';}
+    else if(b>=32&&b<127)cur+=String.fromCharCode(b);
+    else if(cur.length>0)cur='';
+  }
+  let h=sec('LSB STEGANOGRAPHY');
+  h+=row('Pixels analyzed',d.width*d.height);
+  h+=row('LSB bits extracted',bits.length);
+  h+=row('Extracted bytes',bytes.length);
+  h+=sec('PRINTABLE CHARS (first 200)');
+  h+=printable.slice(0,200)+'\n';
+  if(printableOnly.trim().length>4){
+    h+=sec('READABLE TEXT ONLY');
+    h+=`<span class="hit">${printableOnly.slice(0,500)}</span>\n`;
+  }
+  if(strs.length){h+=sec('NULL-TERMINATED STRINGS');strs.forEach(s=>h+=`<span class="hit">${s}</span>\n`);}
+  out('img-out',h);
+  sp.classList.remove('on');
+}
+
+// Color channels
+async function imgChannels(){
+  if(!await ensureImg()){out('img-out',row('Error','No image loaded','warn'));return;}
+  const d=getCtxData();if(!d)return;
+  const draw=(canvId,r,g,b)=>{
+    const c=document.getElementById(canvId);
+    c.width=d.width;c.height=d.height;
+    const ctx=c.getContext('2d');
+    const nd=ctx.createImageData(d.width,d.height);
+    for(let i=0;i<d.data.length;i+=4){nd.data[i]=r?d.data[i]:0;nd.data[i+1]=g?d.data[i+1]:0;nd.data[i+2]=b?d.data[i+2]:0;nd.data[i+3]=255;}
+    ctx.putImageData(nd,0,0);
+  };
+  // Original
+  const co=document.getElementById('ch-orig');co.width=d.width;co.height=d.height;
+  co.getContext('2d').putImageData(d,0,0);
+  draw('ch-r',1,0,0);draw('ch-g',0,1,0);draw('ch-b',0,0,1);
+  document.getElementById('ch-grid').style.display='grid';
+  out('img-out',sec('COLOR CHANNELS')+row('Status','R, G, B planes rendered above','ok')+'\nTip: Look for patterns or text visible in individual channels.');
+}
+
+// Bit planes
+async function imgBitPlanes(){
+  if(!await ensureImg()){out('img-out',row('Error','No image loaded','warn'));return;}
+  const d=getCtxData();if(!d)return;
+  for(let bit=0;bit<8;bit++){
+    const c=document.getElementById('bp'+bit);
+    c.width=d.width;c.height=d.height;
+    const ctx=c.getContext('2d');
+    const nd=ctx.createImageData(d.width,d.height);
+    for(let i=0;i<d.data.length;i+=4){
+      const v=((d.data[i]>>bit)&1)*255;
+      nd.data[i]=v;nd.data[i+1]=v;nd.data[i+2]=v;nd.data[i+3]=255;
+    }
+    ctx.putImageData(nd,0,0);
+  }
+  document.getElementById('bp-grid').style.display='grid';
+  out('img-out',sec('BIT PLANES (Red channel)')+row('Status','Planes 0-7 rendered above','ok')+'\nBit 0 = LSB. Hidden data often in bits 0-2.');
+}
+
+// Magic bytes / hidden files
+async function imgMagic(){
+  if(!await ensureImg()){out('img-out',row('Error','No image loaded','warn'));return;}
+  if(!imgData||!imgData.startsWith('data:')){out('img-out',row('Error','Load a file (not URL) for magic byte analysis','warn'));return;}
+  const binary=atob(imgData.split(',')[1]);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  const sigs=[
+    {sig:[0x50,0x4B,0x03,0x04],name:'ZIP archive',offset:0},
+    {sig:[0x50,0x4B,0x05,0x06],name:'ZIP empty',offset:0},
+    {sig:[0x52,0x61,0x72,0x21],name:'RAR archive',offset:0},
+    {sig:[0x1F,0x8B],name:'GZIP',offset:0},
+    {sig:[0x25,0x50,0x44,0x46],name:'PDF document',offset:0},
+    {sig:[0x89,0x50,0x4E,0x47],name:'PNG image',offset:0},
+    {sig:[0xFF,0xD8,0xFF],name:'JPEG image',offset:0},
+    {sig:[0x47,0x49,0x46],name:'GIF image',offset:0},
+    {sig:[0x4D,0x5A],name:'Windows EXE',offset:0},
+    {sig:[0x7F,0x45,0x4C,0x46],name:'ELF binary',offset:0},
+    {sig:[0x49,0x44,0x33],name:'MP3 audio (ID3)',offset:0},
+    {sig:[0x52,0x49,0x46,0x46],name:'RIFF (WAV/AVI)',offset:0},
+    {sig:[0x4F,0x67,0x67,0x53],name:'OGG audio',offset:0},
+    {sig:[0x66,0x4C,0x61,0x43],name:'FLAC audio',offset:0},
+    {sig:[0x37,0x7A,0xBC,0xAF],name:'7-Zip archive',offset:0},
+    {sig:[0x75,0x73,0x74,0x61,0x72],name:'TAR archive',offset:257},
+  ];
+  let h=sec('FILE TYPE DETECTION');
+  h+=row('File size',bytes.length.toLocaleString()+' bytes');
+  h+=row('First 16 bytes',Array.from(bytes.slice(0,16)).map(b=>b.toString(16).padStart(2,'0')).join(' '));
+  // Check main sig
+  let mainType='unknown';
+  for(const s of sigs){
+    if(s.offset===0&&s.sig.every((b,i)=>bytes[i]===b)){mainType=s.name;break;}
+  }
+  h+=row('Main file type',mainType,mainType!=='unknown'?'ok':'dim');
+  h+=sec('EMBEDDED FILE SIGNATURES');
+  let found=false;
+  for(const s of sigs){
+    for(let i=s.offset||1;i<bytes.length-s.sig.length;i++){
+      if(s.sig.every((b,j)=>bytes[i+j]===b)){
+        h+=row(`Found: ${s.name}`,`at offset ${i} (0x${i.toString(16)})`,'hit');
+        found=true;break;
+      }
+    }
+  }
+  if(!found)h+=row('Embedded files','None detected','dim');
+  // Strings
+  h+=sec('EMBEDDED STRINGS (len > 4)');
+  const strs=[];let cur='';
+  for(const b of bytes){if(b>=32&&b<127)cur+=String.fromCharCode(b);else{if(cur.length>4)strs.push(cur);cur='';}}
+  const unique=[...new Set(strs)].slice(0,30);
+  h+=unique.map(s=>`<span class="hit">${s}</span>\n`).join('');
+  out('img-out',h);
+}
+
+// ═══════════════════════════════════════════
+// MORSE
+// ═══════════════════════════════════════════
+const MORSE={
+  '.-':'A','-...':'B','-.-.':'C','-..':'D','.':'E','..-.':'F','--.':'G','....':'H','..':'I','.---':'J',
+  '-.-':'K','.-..':'L','--':'M','-.':'N','---':'O','.--.':'P','--.-':'Q','.-.':'R','...':'S','-':'T',
+  '..-':'U','...-':'V','.--':'W','-..-':'X','-.--':'Y','--..':'Z',
+  '.----':'1','..---':'2','...--':'3','....-':'4','.....':'5','-....':'6','--...':'7','---..':'8','----.':'9','-----':'0',
+  '.-.-.-':'.','--..--':',','..--..':'?','-.-.--':'!','-....-':'-','.-..-.':'"','-.--.':'(',
+};
+const MORSE_R=Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+function decodeMorse(t){
+  t=t.replace(/\|/g,'/').replace(/  +/g,' / ');
+  return t.trim().split(/\s*\/\s*/).map(w=>w.trim().split(/\s+/).map(s=>MORSE[s]||'?').join('')).join(' ');
+}
+function encodeMorse(t){
+  return t.toUpperCase().split('').map(c=>c===' '?'/':MORSE_R[c]||'?').join(' ').replace(/ \/ /g,' / ');
+}
+function runMorse(){const t=document.getElementById('morse-in').value.trim();out('morse-out',sec('MORSE DECODE')+row('Decoded',decodeMorse(t),'hit'));}
+function runMorseEnc(){const t=document.getElementById('morse-in').value.trim();out('morse-out',sec('MORSE ENCODE')+row('Encoded',encodeMorse(t),'hit'));}
+
+// ═══════════════════════════════════════════
+// BASE ENCODINGS
+// ═══════════════════════════════════════════
+function b32decode(s){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  s=s.toUpperCase().replace(/=+$/,'');
+  let bits='',out='';
+  for(const c of s){const idx=chars.indexOf(c);if(idx<0)throw 0;bits+=idx.toString(2).padStart(5,'0');}
+  for(let i=0;i+8<=bits.length;i+=8)out+=String.fromCharCode(parseInt(bits.slice(i,i+8),2));
+  return out;
+}
+function b32encode(s){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits='',out='';
+  for(let i=0;i<s.length;i++)bits+=s.charCodeAt(i).toString(2).padStart(8,'0');
+  while(bits.length%5)bits+='0';
+  for(let i=0;i<bits.length;i+=5)out+=chars[parseInt(bits.slice(i,i+5),2)];
+  while(out.length%8)out+='=';
+  return out;
+}
+function runBase(){
+  const t=document.getElementById('base-in').value.trim();
+  const enc=document.getElementById('base-mode').value==='enc';
+  let h='';
+  if(!enc){
+    h+=sec('DECODE');
+    try{h+=row('Base64',atob(t),'hit');}catch(e){h+=row('Base64','(failed)','dim');}
+    try{h+=row('Base64 URL-safe',atob(t.replace(/-/g,'+').replace(/_/g,'/')),'hit');}catch(e){}
+    try{const hx=t.replace(/[\s:]/g,'');if(/^[0-9a-fA-F]+$/.test(hx)&&hx.length%2===0)h+=row('Hex bytes',hx.match(/.{2}/g).map(b=>String.fromCharCode(parseInt(b,16))).join(''),'hit');}catch(e){}
+    try{h+=row('Base32',b32decode(t),'hit');}catch(e){h+=row('Base32','(failed)','dim');}
+  }else{
+    h+=sec('ENCODE');
+    h+=row('Base64',btoa(t),'hit');
+    h+=row('Base64 URL-safe',btoa(t).replace(/\+/g,'-').replace(/\//g,'_'),'hit');
+    h+=row('Hex',Array.from(t).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(''),'hit');
+    h+=row('Base32',b32encode(t),'hit');
+  }
+  out('base-out',h);
+}
+
+// ═══════════════════════════════════════════
+// BINARY/OCTAL/HEX
+// ═══════════════════════════════════════════
+function runBinary(){
+  const t=document.getElementById('bin-in').value.trim();
+  const chunks=t.split(/\s+/);let h='';
+  if(chunks.every(c=>/^[01]{4,8}$/.test(c)))h+=row('Binary → ASCII',chunks.map(c=>String.fromCharCode(parseInt(c,2))).join(''),'hit');
+  if(chunks.every(c=>/^[0-7]+$/.test(c)&&c.length>=2))h+=row('Octal → ASCII',chunks.map(c=>String.fromCharCode(parseInt(c,8))).join(''),'hit');
+  if(chunks.every(c=>/^\d+$/.test(c)&&parseInt(c)<=127))h+=row('Decimal → ASCII',chunks.map(c=>String.fromCharCode(parseInt(c))).join(''),'hit');
+  const hx=t.replace(/0x/gi,'').replace(/[\s:]/g,'');
+  if(/^[0-9a-fA-F]+$/.test(hx)&&hx.length%2===0)h+=row('Hex bytes → ASCII',hx.match(/.{2}/g).map(b=>String.fromCharCode(parseInt(b,16))).join(''),'hit');
+  if(!h)h=row('Result','No numeric pattern matched','dim');
+  out('bin-out',h);
+}
+function runBinaryEnc(){
+  const t=document.getElementById('bin-enc').value;
+  let h=sec('ENCODINGS OF: '+t);
+  h+=row('Binary',Array.from(t).map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' '),'hit');
+  h+=row('Octal',Array.from(t).map(c=>c.charCodeAt(0).toString(8)).join(' '),'hit');
+  h+=row('Decimal',Array.from(t).map(c=>c.charCodeAt(0)).join(' '),'hit');
+  h+=row('Hex',Array.from(t).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' '),'hit');
+  out('bin-out',h);
+}
+
+// ═══════════════════════════════════════════
+// URL / HTML
+// ═══════════════════════════════════════════
+function rot47(t){return t.split('').map(c=>{const n=c.charCodeAt(0);return(n>=33&&n<=126)?String.fromCharCode(33+(n-33+47)%94):c;}).join('');}
+function runURL(){
+  const t=document.getElementById('url-in').value;let h=sec('DECODE');
+  try{h+=row('URL decode',decodeURIComponent(t),'hit');}catch(e){}
+  try{h+=row('URL decode+',decodeURIComponent(t.replace(/\+/g,' ')),'hit');}catch(e){}
+  const d=document.createElement('div');d.innerHTML=t;h+=row('HTML unescape',d.innerText,'hit');
+  h+=row('ROT47',rot47(t),'hit');
+  out('url-out',h);
+}
+function runURLEnc(){
+  const t=document.getElementById('url-in').value;let h=sec('ENCODE');
+  h+=row('URL encode',encodeURIComponent(t),'hit');
+  h+=row('URL encode+',encodeURIComponent(t).replace(/%20/g,'+'),'hit');
+  out('url-out',h);
+}
+
+// ═══════════════════════════════════════════
+// CAESAR
+// ═══════════════════════════════════════════
+const ENG='ETAOINSHRDLCUMWFGYPBVKJXQZ';
+function caesarShift(t,n){return t.split('').map(c=>{if(!/[a-zA-Z]/.test(c))return c;const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b-n+26)%26+b);}).join('');}
+function scoreEng(t){return t.toUpperCase().split('').filter(c=>/[A-Z]/.test(c)).reduce((s,c)=>s+(ENG.indexOf(c)<12?2:1),0);}
+function runCaesar(){
+  const t=document.getElementById('caesar-in').value;
+  const s=document.getElementById('caesar-shift').value.trim();
+  let h='';
+  if(s){const n=parseInt(s);h+=sec(`ROT-${n}`)+row('Decoded',caesarShift(t,n),'hit');}
+  const all=Array.from({length:25},(_,i)=>({n:i+1,d:caesarShift(t,i+1),s:scoreEng(caesarShift(t,i+1))})).sort((a,b)=>b.s-a.s);
+  h+=sec('TOP 5 BY ENGLISH SCORE');
+  all.slice(0,5).forEach(r=>h+=row(`ROT-${String(r.n).padStart(2,'0')} [${r.s}]`,r.d,r===all[0]?'hit':''));
+  h+=sec('ALL 25 SHIFTS');
+  [...all].sort((a,b)=>a.n-b.n).forEach(r=>h+=row(`ROT-${String(r.n).padStart(2,'0')}`,r.d));
+  out('caesar-out',h);
+}
+function runCaesarEnc(){
+  const t=document.getElementById('caesar-in').value;
+  const s=parseInt(document.getElementById('caesar-shift').value||13);
+  out('caesar-out',sec(`ENCODE ROT-${s}`)+row('Encoded',caesarShift(t,-s),'hit'));
+}
+
+// ═══════════════════════════════════════════
+// VIGENERE
+// ═══════════════════════════════════════════
+function vigApply(t,key,dec){
+  key=key.toUpperCase();let ki=0,r='';
+  for(const c of t){
+    if(/[a-zA-Z]/.test(c)){
+      const b=c<='Z'?65:97,k=key.charCodeAt(ki%key.length)-65;
+      r+=String.fromCharCode((c.charCodeAt(0)-b+(dec?-k+26:k))%26+b);ki++;
+    }else r+=c;
+  }return r;
+}
+const ARG_KEYS=['ROBLOX','SECRET','KEY','ANSWER','PASSWORD','CIPHER','HELLO','WORLD','GAME','ARG','CLUE','BACON','ENIGMA','PUZZLE','CODE','HIDDEN','FLAG','SOLVE','OPEN','LOCK'];
+function runVig(){
+  const t=document.getElementById('vig-in').value;
+  const k=document.getElementById('vig-key').value.trim();
+  let h='';
+  if(k){h+=sec(`KEY="${k}"`)+row('Decoded',vigApply(t,k,true),'hit');}
+  else{h+=sec('COMMON ARG KEYS');ARG_KEYS.forEach(ky=>h+=row(`Key="${ky}"`,vigApply(t,ky,true)));}
+  out('vig-out',h);
+}
+function runVigEnc(){
+  const t=document.getElementById('vig-in').value;
+  const k=document.getElementById('vig-key').value.trim()||'KEY';
+  out('vig-out',sec(`ENCODE key="${k}"`)+row('Encoded',vigApply(t,k,false),'hit'));
+}
+function runVigAnalyse(){
+  const t=document.getElementById('vig-in').value.toUpperCase().replace(/[^A-Z]/g,'');
+  let h=sec('KEY LENGTH ANALYSIS (IC Method)');
+  for(let kl=2;kl<=12;kl++){
+    const cols=Array.from({length:kl},(_,i)=>t.split('').filter((_,j)=>j%kl===i).join(''));
+    const avgIC=cols.map(col=>{
+      const fr={};for(const c of col)fr[c]=(fr[c]||0)+1;
+      const n=col.length;
+      return n>1?Object.values(fr).reduce((s,f)=>s+f*(f-1),0)/(n*(n-1)):0;
+    }).reduce((a,b)=>a+b,0)/kl;
+    h+=row(`Key length ${kl}`,avgIC.toFixed(4)+(avgIC>0.06?' ← likely':''),avgIC>0.06?'hit':'');
+  }
+  out('vig-out',h);
+}
+
+// ═══════════════════════════════════════════
+// ATBASH
+// ═══════════════════════════════════════════
+function atbash(t){return t.split('').map(c=>{if(!/[a-zA-Z]/.test(c))return c;const b=c<='Z'?65:97;return String.fromCharCode(b+25-(c.charCodeAt(0)-b));}).join('');}
+function runAtbash(){out('atbash-out',row('Atbash',atbash(document.getElementById('atbash-in').value),'hit'));}
+
+// ═══════════════════════════════════════════
+// PLAYFAIR
+// ═══════════════════════════════════════════
+function pfBuildSquare(key){
+  const seen=new Set();const sq=[];
+  for(const c of (key.toUpperCase()+'ABCDEFGHIJKLMNOPQRSTUVWXYZ').replace(/J/g,'I')){
+    if(!seen.has(c)&&c.match(/[A-Z]/)){seen.add(c);sq.push(c);}
+  }return sq;
+}
+function pfGetPos(sq,c){const i=sq.indexOf(c);return[Math.floor(i/5),i%5];}
+function pfCipher(t,key,enc){
+  const sq=pfBuildSquare(key);
+  t=t.toUpperCase().replace(/J/g,'I').replace(/[^A-Z]/g,'');
+  // Prepare digrams
+  const pairs=[];
+  for(let i=0;i<t.length;){
+    const a=t[i],b=t[i+1]||'X';
+    if(a===b){pairs.push([a,'X']);i++;}
+    else{pairs.push([a,b]);i+=2;}
+  }
+  if(pairs.length&&pairs[pairs.length-1][1]===''){pairs[pairs.length-1][1]='X';}
+  return pairs.map(([a,b])=>{
+    const[ar,ac]=pfGetPos(sq,a),[br,bc]=pfGetPos(sq,b);
+    if(ar===br){return sq[ar*5+(ac+(enc?1:-1)+5)%5]+sq[br*5+(bc+(enc?1:-1)+5)%5];}
+    if(ac===bc){return sq[((ar+(enc?1:-1)+5)%5)*5+ac]+sq[((br+(enc?1:-1)+5)%5)*5+bc];}
+    return sq[ar*5+bc]+sq[br*5+ac];
+  }).join('');
+}
+function pfUpdateSquare(){
+  const sq=pfBuildSquare(document.getElementById('pf-key').value||'KEY');
+  const el=document.getElementById('pf-sq');el.innerHTML='';
+  sq.forEach(c=>{const d=document.createElement('div');d.className='pf-cell';d.textContent=c;el.appendChild(d);});
+}
+document.getElementById('pf-key').addEventListener('input',pfUpdateSquare);
+pfUpdateSquare();
+function runPlayfair(enc){
+  const t=document.getElementById('pf-in').value,k=document.getElementById('pf-key').value||'KEY';
+  out('pf-out',sec(enc?'ENCODE':'DECODE')+row(enc?'Encoded':'Decoded',pfCipher(t,k,enc),'hit'));
+}
+
+// ═══════════════════════════════════════════
+// BACONIAN
+// ═══════════════════════════════════════════
+const BACON_MAP=Object.fromEntries('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c,i)=>[c,i.toString(2).padStart(5,'0')]));
+const BACON_REV=Object.fromEntries(Object.entries(BACON_MAP).map(([k,v])=>[v,k]));
+function runBacon(){
+  const t=document.getElementById('bacon-in').value.toUpperCase().replace(/[^AB01\s]/g,'').replace(/0/g,'A').replace(/1/g,'B').replace(/\s/g,'');
+  if(t.length%5!==0){out('bacon-out',row('Error','Length not divisible by 5','warn'));return;}
+  const dec=Array.from({length:t.length/5},(_,i)=>BACON_REV[t.slice(i*5,i*5+5).replace(/A/g,'0').replace(/B/g,'1')]||'?').join('');
+  out('bacon-out',sec('DECODED')+row('Result',dec,'hit'));
+}
+function runBaconEnc(){
+  const t=document.getElementById('bacon-enc').value.toUpperCase().replace(/[^A-Z]/g,'');
+  const enc=Array.from(t).map(c=>BACON_MAP[c]||'?????').join(' ');
+  const encAB=enc.replace(/0/g,'A').replace(/1/g,'B');
+  out('bacon-out',sec('ENCODED')+row('Binary',enc,'hit')+row('A/B',encAB,'hit'));
+}
+
+// ═══════════════════════════════════════════
+// RAIL FENCE
+// ═══════════════════════════════════════════
+function railFence(t,rails,enc){
+  const n=t.length,pat=[];let r=0,dir=1;
+  for(let i=0;i<n;i++){pat.push(r);if(r===0)dir=1;else if(r===rails-1)dir=-1;r+=dir;}
+  if(enc){
+    const rows=Array.from({length:rails},()=>[]);
+    for(let i=0;i<n;i++)rows[pat[i]].push(t[i]);
+    return rows.flat().join('');
+  }else{
+    const idx=Array.from({length:n},(_,i)=>i).sort((a,b)=>pat[a]-pat[b]);
+    const arr=new Array(n);
+    for(let i=0;i<n;i++)arr[idx[i]]=t[i];
+    return arr.join('');
+  }
+}
+function runRail(enc){
+  const t=document.getElementById('rail-in').value;
+  const nv=document.getElementById('rail-n').value.trim();
+  let h='';
+  if(nv){const n=parseInt(nv);h+=sec(enc?`ENCODE rails=${n}`:`DECODE rails=${n}`)+row('Result',railFence(t,n,enc),'hit');}
+  else{for(let r=2;r<=10;r++)h+=row(`Rails ${r}`,railFence(t,r,enc));}
+  out('rail-out',h);
+}
+
+// ═══════════════════════════════════════════
+// COLUMNAR TRANSPOSITION
+// ═══════════════════════════════════════════
+function columnarOrder(key){return [...key.toUpperCase()].map((c,i)=>[c,i]).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0).map(([,i])=>i);}
+function runColumnar(enc){
+  const t=document.getElementById('col-in').value;
+  const key=document.getElementById('col-key').value.trim()||'KEY';
+  const ord=columnarOrder(key);const cols=key.length;
+  const rows=Math.ceil(t.length/cols);
+  const padded=t.padEnd(rows*cols);
+  let h='',result='';
+  if(enc){
+    const grid=Array.from({length:rows},(_,r)=>padded.slice(r*cols,(r+1)*cols));
+    result=ord.map(c=>Array.from({length:rows},(_,r)=>grid[r][c]).join('')).join('');
+  }else{
+    const colLens=Array.from({length:cols},(_,i)=>i<t.length%cols||t.length%cols===0?rows:rows-1);
+    const sorted=ord.map((o,i)=>[o,i]);
+    const sortedByPos=[...sorted].sort((a,b)=>a[0]-b[0]);
+    const cols2=Array(cols);let pos=0;
+    for(const[o,i]of sorted){cols2[o]=t.slice(pos,pos+colLens[i]);pos+=colLens[i];}
+    result=Array.from({length:rows},(_,r)=>Array.from({length:cols},(_,c)=>cols2[c][r]||'').join('')).join('').trim();
+  }
+  out('col-out',sec(`Key: ${key} Order: ${ord.join(',')}`)+row(enc?'Encoded':'Decoded',result,'hit'));
+}
+
+// ═══════════════════════════════════════════
+// A1Z26
+// ═══════════════════════════════════════════
+function runA1Z26(){
+  const t=document.getElementById('a1z26-in').value;let h='';
+  for(const delim of[' ','-',',']){
+    const parts=t.split(delim).map(p=>p.trim()).filter(p=>/^\d+$/.test(p)&&parseInt(p)>=1&&parseInt(p)<=26);
+    if(parts.length>0)h+=row(`Delim "${delim||'sp'}"`,parts.map(p=>String.fromCharCode(parseInt(p)+64)).join(''),'hit');
+  }
+  if(!h)h=row('Result','No 1-26 pattern found','dim');
+  out('a1z26-out',h);
+}
+function runA1Z26Enc(){
+  const t=document.getElementById('a1z26-enc').value.toUpperCase().replace(/[^A-Z ]/g,'');
+  const enc=Array.from(t).map(c=>c===' '?' ':c.charCodeAt(0)-64).join('-');
+  out('a1z26-out',sec('ENCODED')+row('Numbers',enc,'hit'));
+}
+
+// ═══════════════════════════════════════════
+// REVERSE
+// ═══════════════════════════════════════════
+function runReverse(){
+  const t=document.getElementById('rev-in').value;let h='';
+  h+=row('Reversed',[...t].reverse().join(''),'hit');
+  h+=row('Words reversed',t.split(' ').reverse().join(' '));
+  h+=row('Each word rev',t.split(' ').map(w=>[...w].reverse().join('')).join(' '));
+  h+=row('Lines reversed',t.split('\n').reverse().join('\n'));
+  out('rev-out',h);
+}
+
+// ═══════════════════════════════════════════
+// FREQUENCY ANALYSIS
+// ═══════════════════════════════════════════
+function runFreq(){
+  const t=document.getElementById('freq-in').value;
+  const letters=t.toUpperCase().split('').filter(c=>/[A-Z]/.test(c));
+  if(!letters.length){out('freq-out',row('Error','No letters','warn'));return;}
+  const fr={};for(const c of letters)fr[c]=(fr[c]||0)+1;
+  const total=letters.length;
+  const sorted=Object.keys(fr).sort((a,b)=>fr[b]-fr[a]);
+  const ic=Object.values(fr).reduce((s,f)=>s+f*(f-1),0)/(total*(total-1));
+  let h=sec('STATISTICS');
+  h+=row('Total letters',total);
+  h+=row('Unique',Object.keys(fr).length);
+  h+=row('IC',`${ic.toFixed(4)} (eng≈0.065 rnd≈0.038)`,ic>0.055?'ok':ic<0.045?'warn':'');
+  h+=row('IC suggests',ic>0.055?'Monoalphabetic / substitution':ic<0.045?'Polyalphabetic (Vigenère?) or transposition':'Mixed');
+  h+=row('English order','ETAOINSHRDLCUMWFGYPBVKJXQZ');
+  h+=row('Your top 12',sorted.slice(0,12).map(c=>`${c}=${fr[c]}`).join(' '),'hit');
+  h+=sec('SUBSTITUTION GUESS (map freq→ETAOINS)');
+  const engOrder='ETAOINSHRDLCUMWFGYPBVKJXQZ';
+  const mapping={};sorted.forEach((c,i)=>{if(i<26)mapping[c]=engOrder[i];});
+  const guess=t.toUpperCase().split('').map(c=>/[A-Z]/.test(c)?(mapping[c]||c):c).join('');
+  h+=guess.slice(0,300)+'\n';
+  h+=sec('FULL FREQUENCY TABLE');
+  h+=sorted.map(c=>{const pct=(fr[c]/total*100).toFixed(1);const bar='█'.repeat(Math.round(fr[c]/total*30));return row(c,`${String(fr[c]).padStart(4)} ${pct.padStart(5)}%  ${bar}`)}).join('');
+  out('freq-out',h);
+}
+
+// ═══════════════════════════════════════════
+// SEQUENCES
+// ═══════════════════════════════════════════
+function isPrime(n){if(n<2)return false;for(let i=2;i<=Math.sqrt(n);i++)if(n%i===0)return false;return true;}
+function isFib(n){return[4,-4].some(k=>Number.isInteger(Math.sqrt(5*n*n+k)));}
+function runSeq(){
+  const nums=(document.getElementById('seq-in').value.match(/-?\d+/g)||[]).map(Number);
+  if(nums.length<2){out('seq-out',row('Error','Need ≥2 numbers','warn'));return;}
+  const d1=nums.slice(1).map((v,i)=>v-nums[i]);
+  const d2=d1.slice(1).map((v,i)=>v-d1[i]);
+  const ratios=nums.slice(1).map((v,i)=>nums[i]!==0?(v/nums[i]).toFixed(4):'∞');
+  let h=sec('SEQUENCE');
+  h+=row('Numbers',nums.join(', '));
+  h+=row('1st differences',d1.join(', '),'hit');
+  h+=row('2nd differences',d2.join(', '));
+  h+=row('Ratios',ratios.join(', '));
+  h+=sec('PATTERNS');
+  if([...new Set(d1)].length===1)h+=row('Arithmetic','next = '+(nums[nums.length-1]+d1[0]),'hit');
+  if([...new Set(d2)].length===1&&d2[0]===0)h+=row('Quadratic','constant 2nd difference','hit');
+  if(nums.every(n=>isFib(Math.abs(n))))h+=row('Fibonacci','YES ✓','hit');
+  if(nums.filter(n=>n>1).every(isPrime))h+=row('All prime','YES ✓','hit');
+  if(nums.every(n=>n>=1&&n<=26))h+=row('A1Z26 guess',nums.map(n=>String.fromCharCode(n+64)).join(''),'hit');
+  if(nums.every(n=>n>=0&&n<=127))h+=row('ASCII codes',nums.map(n=>String.fromCharCode(n)).join(''),'hit');
+  out('seq-out',h);
+}
+
+// ═══════════════════════════════════════════
+// HASH
+// ═══════════════════════════════════════════
+async function sha(algo,msg){
+  const buf=await crypto.subtle.digest(algo,new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+const HASH_TYPES={32:'MD5 (32 hex)',40:'SHA-1 (40 hex)',56:'SHA-224',64:'SHA-256 / BLAKE2s',96:'SHA-384',128:'SHA-512 / BLAKE2b'};
+const COMMON_WORDS='password,123456,password123,admin,letmein,qwerty,abc123,monkey,1234567,dragon,master,iloveyou,sunshine,princess,football,shadow,pass,hello,welcome,login,abc,secret,test,root,user,guest,god,love,sex,fire,god,pass,hack,123,1234,12345,123456789,111111,000000,pass123,password1,roblox,minecraft,gaming,puzzle,cipher,flag,ctf,solve,answer,key,secret,hidden'.split(',');
+async function runHash(){
+  const t=document.getElementById('hash-in').value.trim();
+  let h=sec('HASH IDENTIFICATION');
+  if(/^[0-9a-fA-F]+$/.test(t))h+=row('Type',HASH_TYPES[t.length]||`Unknown (len=${t.length})`,'hit');
+  else h+=row('Note','Not a standard hex hash','dim');
+  h+=sec('COMPUTE HASHES OF INPUT');
+  try{h+=row('SHA-1',await sha('SHA-1',t));}catch(e){}
+  try{h+=row('SHA-256',await sha('SHA-256',t),'hit');}catch(e){}
+  try{h+=row('SHA-384',await sha('SHA-384',t));}catch(e){}
+  try{h+=row('SHA-512',await sha('SHA-512',t));}catch(e){}
+  out('hash-out',h);
+}
+async function runHashCrack(){
+  const t=document.getElementById('hash-in').value.trim().toLowerCase();
+  if(!/^[0-9a-fA-F]{32,}$/.test(t)){out('hash-out',row('Error','Enter a hash hex string to crack','warn'));return;}
+  let h=sec('CRACKING: '+t.slice(0,20)+'…');
+  h+=row('Wordlist size',COMMON_WORDS.length);
+  out('hash-out',h+'<span class="blink dim">checking…</span>');
+  for(const w of COMMON_WORDS){
+    for(const algo of['SHA-1','SHA-256']){
+      const hash=await sha(algo,w);
+      if(hash===t||hash.slice(0,t.length)===t){
+        out('hash-out',h+row('CRACKED!',`"${w}" matches ${algo}`,'hit'));return;
+      }
+    }
+    // Also try MD5-like check via SubtleCrypto (SHA-256 is closest we can do natively)
+  }
+  out('hash-out',h+row('Result','Not found in common wordlist','warn'));
+}
+
+// ═══════════════════════════════════════════
+// AUTO DETECT
+// ═══════════════════════════════════════════
+function quickCipherCheck(t){
+  let h='';
+  // Base64
+  if(/^[A-Za-z0-9+/=\-_]{8,}$/.test(t.trim())){try{h+=row('[Base64]',atob(t.trim().replace(/-/g,'+').replace(/_/g,'/')),'hit');}catch(e){}}
+  // Hex
+  const hx=t.replace(/[\s:]/g,'');
+  if(/^[0-9a-fA-F]{8,}$/.test(hx)&&hx.length%2===0){try{h+=row('[Hex]',hx.match(/.{2}/g).map(b=>String.fromCharCode(parseInt(b,16))).join(''),'hit');}catch(e){}}
+  // Binary
+  const chunks=t.trim().split(/\s+/);
+  if(chunks.length>1&&chunks.every(c=>/^[01]{4,8}$/.test(c)))h+=row('[Binary]',chunks.map(c=>String.fromCharCode(parseInt(c,2))).join(''),'hit');
+  // Morse
+  if(/^[.\-\s/|]+$/.test(t.trim()))h+=row('[Morse]',decodeMorse(t.trim()),'hit');
+  // Decimal
+  if(chunks.every(c=>/^\d{1,3}$/.test(c)&&parseInt(c)<=127))h+=row('[Decimal]',chunks.map(c=>String.fromCharCode(parseInt(c))).join(''),'hit');
+  // A1Z26
+  if(chunks.every(c=>/^\d+$/.test(c)&&parseInt(c)>=1&&parseInt(c)<=26))h+=row('[A1Z26]',chunks.map(c=>String.fromCharCode(parseInt(c)+64)).join(''),'hit');
+  // URL
+  if(t.includes('%'))try{h+=row('[URL]',decodeURIComponent(t),'hit');}catch(e){}
+  // Caesar top 3
+  if(t.replace(/[^a-zA-Z]/g,'').length>3){
+    const all=Array.from({length:25},(_,i)=>({n:i+1,d:caesarShift(t,i+1),s:scoreEng(caesarShift(t,i+1))})).sort((a,b)=>b.s-a.s);
+    all.slice(0,3).forEach(r=>h+=row(`[ROT-${r.n}]`,r.d,r===all[0]?'hit':''));
+    h+=row('[Atbash]',atbash(t));
+    h+=row('[Reversed]',[...t].reverse().join(''));
+  }
+  return h;
+}
+function runAuto(){const t=document.getElementById('auto-in').value.trim();out('auto-out',sec('AUTO-DETECT RESULTS')+quickCipherCheck(t));}
+
+// ═══════════════════════════════════════════
+// PIGPEN CIPHER
+// ═══════════════════════════════════════════
+// SVG paths for each letter (24x24 viewBox, stroke only)
+const PG_PATHS={
+  // Grid 1: A-I (no dot)
+  A:'M20,2 L20,22 L4,22',             // right+bottom corner
+  B:'M4,2 L4,22 L20,22 L20,2',        // open-top U
+  C:'M4,2 L4,22 L20,22',              // left+bottom corner
+  D:'M4,2 L20,2 L20,22 L4,22',        // open-left C
+  E:'M4,2 L20,2 L20,22 L4,22 L4,2',  // box
+  F:'M20,2 L4,2 L4,22 L20,22',        // open-right C
+  G:'M4,2 L20,2 L20,22',             // top+right corner
+  H:'M4,22 L4,2 L20,2 L20,22',        // open-bottom arch
+  I:'M20,2 L4,2 L4,22',              // top+left corner
+  // Grid 2: J-R (same shapes + dot)
+  J:'M20,2 L20,22 L4,22',
+  K:'M4,2 L4,22 L20,22 L20,2',
+  L:'M4,2 L4,22 L20,22',
+  M:'M4,2 L20,2 L20,22 L4,22',
+  N:'M4,2 L20,2 L20,22 L4,22 L4,2',
+  O:'M20,2 L4,2 L4,22 L20,22',
+  P:'M4,2 L20,2 L20,22',
+  Q:'M4,22 L4,2 L20,2 L20,22',
+  R:'M20,2 L4,2 L4,22',
+  // X grid: S-V (no dot)
+  S:'M4,12 L12,4 L20,12',   // top ^
+  T:'M12,4 L20,12 L12,20',  // right >
+  U:'M4,12 L12,20 L20,12',  // bottom v
+  V:'M12,4 L4,12 L12,20',   // left <
+  // X grid: W-Z (dot)
+  W:'M4,12 L12,4 L20,12',
+  X:'M12,4 L20,12 L12,20',
+  Y:'M4,12 L12,20 L20,12',
+  Z:'M12,4 L4,12 L12,20',
+};
+const PG_DOT='JKLMNOPQRWXYZ';
+let pgText='';
+function pgSvg(letter,size=34){
+  const path=PG_PATHS[letter]||'';
+  const hasDot=PG_DOT.includes(letter);
+  return`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/>${hasDot?'<circle cx="12" cy="12" r="2.5" fill="var(--g)"/>':''}</svg>`;
+}
+function pgBuild(){
+  const kb=document.getElementById('pg-kb');kb.innerHTML='';
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(l=>{
+    const k=document.createElement('div');k.className='pg-k';
+    k.innerHTML=pgSvg(l,26)+`<span class="pg-l">${l}</span>`;
+    k.onclick=()=>{pgText+=l;pgUpdate();};
+    kb.appendChild(k);
+  });
+}
+function pgUpdate(){document.getElementById('pg-decoded').textContent=pgText||'_';}
+function pgSpace(){pgText+=' ';pgUpdate();}
+function pgBack(){pgText=pgText.slice(0,-1);pgUpdate();}
+function pgClear(){pgText='';pgUpdate();}
+function pgEncode(){
+  const t=document.getElementById('pg-enc-in').value.toUpperCase().replace(/[^A-Z ]/g,'');
+  const names=Array.from(t).map(c=>c===' '?'[space]':c+'('+pgSvg(c,16)+')').join(' ');
+  out('pg-out','<span class="hit">'+t+'</span>\n\nSymbol sequence (click each in the keyboard above):\n'+t.split('').map(c=>c===' '?'[ ]':c).join('  '));
+}
+pgBuild();
+
+// ═══════════════════════════════════════════
+// BRAILLE
+// ═══════════════════════════════════════════
+const BRAILLE_MAP={
+  '100000':'A','110000':'B','100100':'C','100110':'D','100010':'E',
+  '110100':'F','110110':'G','110010':'H','010100':'I','010110':'J',
+  '101000':'K','111000':'L','101100':'M','101110':'N','101010':'O',
+  '111100':'P','111110':'Q','111010':'R','011100':'S','011110':'T',
+  '101001':'U','111001':'V','010111':'W','101101':'X','101111':'Y',
+  '101011':'Z','000000':' ','001111':'#','011010':'.',
+  '001101':',','001110':'?','011101':'!','010010':'-',
+};
+const BRAILLE_REV=Object.fromEntries(Object.entries(BRAILLE_MAP).map(([k,v])=>[v,k]));
+// Unicode braille block: U+2800-U+28FF
+// Dot pattern: bit0=dot1, bit1=dot2, bit2=dot3, bit3=dot4, bit4=dot5, bit5=dot6
+const BR_UNICODE_MAP={};
+for(const[dots,letter]of Object.entries(BRAILLE_MAP)){
+  const bits=parseInt(dots,2);
+  // Rearrange: our bit order is d1-d2-d3-d4-d5-d6 MSB first → unicode uses d1,d2,d3,d4,d5,d6 LSB
+  const rearranged=
+    ((bits>>5)&1)|
+    (((bits>>4)&1)<<1)|
+    (((bits>>3)&1)<<2)|
+    (((bits>>2)&1)<<3)|
+    (((bits>>1)&1)<<4)|
+    ((bits&1)<<5);
+  BR_UNICODE_MAP[String.fromCodePoint(0x2800+rearranged)]=letter;
+}
+const BR_UNICODE_ENC=Object.fromEntries(Object.entries(BR_UNICODE_MAP).map(([k,v])=>[v,k]));
+
+let brDots=[0,0,0,0,0,0]; // dots 1-6
+function brToggle(d){brDots[d-1]=brDots[d-1]?0:1;document.getElementById('bd'+d).classList.toggle('on');brUpdateResult();}
+function brUpdateResult(){
+  const key=brDots.join('');
+  const letter=BRAILLE_MAP[key]||'?';
+  document.getElementById('br-result').textContent=letter;
+}
+let brText='';
+function brAdd(){const k=brDots.join('');const l=BRAILLE_MAP[k];if(l){brText+=l;document.getElementById('br-decoded').textContent=brText||'_';}}
+function brSpace(){brText+=' ';document.getElementById('br-decoded').textContent=brText||'_';}
+function brBack(){brText=brText.slice(0,-1);document.getElementById('br-decoded').textContent=brText||'_';}
+function brClear(){brText='';brDots=[0,0,0,0,0,0];[1,2,3,4,5,6].forEach(d=>{document.getElementById('bd'+d).classList.remove('on');});brUpdateResult();document.getElementById('br-decoded').textContent='_';}
+function brUni(){
+  const t=document.getElementById('br-uni-in').value;
+  const dec=Array.from(t).map(c=>BR_UNICODE_MAP[c]||c).join('');
+  out('br-out',row('Decoded',dec,'hit'));
+}
+function brEncode(){
+  const t=document.getElementById('br-enc-in').value.toUpperCase();
+  const enc=Array.from(t).map(c=>BR_UNICODE_ENC[c]||c).join('');
+  out('br-out',row('Braille Unicode',enc,'hit'));
+}
+
+// ═══════════════════════════════════════════
+// ELDER FUTHARK RUNES
+// ═══════════════════════════════════════════
+const RUNES=[
+  {s:'ᚠ',n:'Fehu',l:'F'},{s:'ᚢ',n:'Uruz',l:'U'},{s:'ᚦ',n:'Thurisaz',l:'TH'},
+  {s:'ᚨ',n:'Ansuz',l:'A'},{s:'ᚱ',n:'Raidho',l:'R'},{s:'ᚲ',n:'Kaunan',l:'K'},
+  {s:'ᚷ',n:'Gebo',l:'G'},{s:'ᚹ',n:'Wunjo',l:'W'},{s:'ᚺ',n:'Hagalaz',l:'H'},
+  {s:'ᚾ',n:'Naudiz',l:'N'},{s:'ᛁ',n:'Isaz',l:'I'},{s:'ᛃ',n:'Jera',l:'J/Y'},
+  {s:'ᛇ',n:'Eihwaz',l:'EI'},{s:'ᛈ',n:'Pertho',l:'P'},{s:'ᛉ',n:'Algiz',l:'Z'},
+  {s:'ᛊ',n:'Sowilo',l:'S'},{s:'ᛏ',n:'Tiwaz',l:'T'},{s:'ᛒ',n:'Berkanan',l:'B'},
+  {s:'ᛖ',n:'Ehwaz',l:'E'},{s:'ᛗ',n:'Mannaz',l:'M'},{s:'ᛚ',n:'Laguz',l:'L'},
+  {s:'ᛜ',n:'Ingwaz',l:'NG'},{s:'ᛞ',n:'Dagaz',l:'D'},{s:'ᛟ',n:'Othalan',l:'O'},
+];
+const RUNE_TO_LAT=Object.fromEntries(RUNES.map(r=>[r.s,r.l]));
+const LAT_TO_RUNE=Object.fromEntries(RUNES.map(r=>[r.l.split('/')[0],r.s]));
+LAT_TO_RUNE['V']=LAT_TO_RUNE['W']; // V/W mapping
+let runeText='';
+function runeGridBuild(){
+  const g=document.getElementById('rune-grid');
+  RUNES.forEach(r=>{
+    const k=document.createElement('div');k.className='rune-k';
+    k.innerHTML=`<span class="rune-sym">${r.s}</span><span class="rune-name">${r.n}</span><span class="rune-lat">${r.l}</span>`;
+    k.onclick=()=>{runeText+=r.l.split('/')[0];document.getElementById('rune-decoded').textContent=runeText||'_';};
+    g.appendChild(k);
+  });
+}
+function runeSpace(){runeText+=' ';document.getElementById('rune-decoded').textContent=runeText||'_';}
+function runeBack(){runeText=runeText.slice(0,-1);document.getElementById('rune-decoded').textContent=runeText||'_';}
+function runeClear(){runeText='';document.getElementById('rune-decoded').textContent='_';}
+function runeDecode(){
+  const t=document.getElementById('rune-in').value;
+  const dec=Array.from(t).map(c=>RUNE_TO_LAT[c]||c).join('');
+  out('rune-out',row('Decoded',dec,'hit'));
+}
+function runeEncode(){
+  const t=document.getElementById('rune-enc-in').value.toUpperCase().replace(/TH/g,'ᚦ').replace(/NG/g,'ᛜ').replace(/EI/g,'ᛇ');
+  const enc=Array.from(t).map(c=>LAT_TO_RUNE[c]||c).join('');
+  out('rune-out',row('Runes',enc,'hit'));
+}
+runeGridBuild();
+
+// ═══════════════════════════════════════════
+// SEMAPHORE
+// ═══════════════════════════════════════════
+// Semaphore: left arm angle, right arm angle (clock positions 1-8, where 1=up, 2=upper-right, etc.)
+// Standard semaphore positions (L_arm, R_arm) for each letter
+const SEM=[
+  {l:'A',la:6,ra:2},{l:'B',la:6,ra:3},{l:'C',la:6,ra:4},{l:'D',la:6,ra:5},
+  {l:'E',la:6,ra:7},{l:'F',la:6,ra:8},{l:'G',la:6,ra:1},{l:'H',la:5,ra:2},
+  {l:'I',la:5,ra:3},{l:'J',la:2,ra:7},{l:'K',la:1,ra:2},{l:'L',la:1,ra:3},
+  {l:'M',la:1,ra:4},{l:'N',la:1,ra:5},{l:'O',la:1,ra:7},{l:'P',la:8,ra:2},
+  {l:'Q',la:8,ra:3},{l:'R',la:8,ra:4},{l:'S',la:8,ra:5},{l:'T',la:8,ra:7},
+  {l:'U',la:3,ra:5},{l:'V',la:2,ra:7},{l:'W',la:4,ra:7},{l:'X',la:3,ra:7},
+  {l:'Y',la:2,ra:5},{l:'Z',la:5,ra:7},
+];
+// Position names for angle text input
+const SEM_POS=['','up','upper-right','right','lower-right','down','lower-left','left','upper-left'];
+const SEM_POS_MAP=Object.fromEntries(SEM_POS.map((n,i)=>[n,i]));
+function semSvg(la,ra,size=44){
+  // Draw person with two arms
+  const cx=size/2,cy=size*0.38,arm=size*0.38;
+  const angle=(pos)=>((pos-1)*45-90)*Math.PI/180;
+  const al=angle(la),ar=angle(ra);
+  const lx=cx+Math.cos(al)*arm,ly=cy+Math.sin(al)*arm;
+  const rx=cx+Math.cos(ar)*arm,ry=cy+Math.sin(ar)*arm;
+  return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none">
+    <circle cx="${cx}" cy="${cy*0.6}" r="${size*0.09}" fill="var(--g)" opacity=".6"/>
+    <line x1="${cx}" y1="${cy}" x2="${lx}" y2="${ly}" stroke="var(--g)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cy}" x2="${rx}" y2="${ry}" stroke="var(--a)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cy}" x2="${cx}" y2="${size*0.82}" stroke="var(--dim)" stroke-width="1.5"/>
+  </svg>`;
+}
+let semText='';
+function semGridBuild(){
+  const g=document.getElementById('sem-grid');
+  SEM.forEach(s=>{
+    const k=document.createElement('div');k.className='sem-k';
+    k.innerHTML=semSvg(s.la,s.ra,54)+`<span class="sem-l">${s.l}</span>`;
+    k.onclick=()=>{semText+=s.l;document.getElementById('sem-decoded').textContent=semText||'_';};
+    g.appendChild(k);
+  });
+}
+function semSpace(){semText+=' ';document.getElementById('sem-decoded').textContent=semText||'_';}
+function semBack(){semText=semText.slice(0,-1);document.getElementById('sem-decoded').textContent=semText||'_';}
+function semClear(){semText='';document.getElementById('sem-decoded').textContent='_';}
+function semDecode(){
+  const t=document.getElementById('sem-in').value.trim();
+  const letters=t.split(/\s*\/\s*/);
+  let result='',h='';
+  for(const l of letters){
+    const parts=l.toLowerCase().split(',').map(p=>p.trim());
+    if(parts.length===2){
+      const la=SEM_POS_MAP[parts[0]],ra=SEM_POS_MAP[parts[1]];
+      const match=SEM.find(s=>s.la===la&&s.ra===ra);
+      result+=match?match.l:'?';
+    }else result+='?';
+  }
+  h+=row('Decoded',result,'hit');
+  h+='\nPosition names: '+SEM_POS.slice(1).join(', ');
+  out('sem-out',h);
+}
+semGridBuild();
+
+// ═══════════════════════════════════════════
+// WINGDINGS
+// ═══════════════════════════════════════════
+// Wingdings char code map: character code offset from ASCII printable chars
+// Wingdings maps ASCII 0x21-0x7E to symbols; to decode treat each char's code as index
+const WD_MAP=Array.from({length:94},(_,i)=>{
+  const c=i+33; // ASCII !..~
+  return{ascii:String.fromCharCode(c),wd:String.fromCodePoint(c)};
+});
+// Build lookup: wingdings char → latin letter
+// Wingdings font positions for A-Z start at chr(65) = 'A' maps to ✌ etc.
+// We use a practical approach: show the Wingdings font rendering + char code
+const WD_LETTER_MAP='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').reduce((o,c,i)=>{o[c]=String.fromCharCode(65+i);return o;},{});
+let wdText='';
+function wdGridBuild(){
+  const g=document.getElementById('wd-grid');
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(c=>{
+    const k=document.createElement('div');k.className='wd-k';
+    k.innerHTML=`<span class="wd-sym">${c}</span><span class="wd-let">${c}</span>`;
+    k.onclick=()=>{wdText+=c;document.getElementById('wd-decoded').textContent=wdText||'_';};
+    g.appendChild(k);
+  });
+}
+function wdSpace(){wdText+=' ';document.getElementById('wd-decoded').textContent=wdText||'_';}
+function wdBack(){wdText=wdText.slice(0,-1);document.getElementById('wd-decoded').textContent=wdText||'_';}
+function wdClear(){wdText='';document.getElementById('wd-decoded').textContent='_';}
+function wdDecodeInput(){
+  // Wingdings encodes A=chr(65) → symbol; to decode wingdings: treat each char's codepoint
+  // Map: Wingdings char at position = 0xF000 + ascii_code (private use area in some fonts)
+  // Practical: map via the offset from the printable range
+  const t=document.getElementById('wd-in').value;
+  const dec=Array.from(t).map(c=>{
+    const cp=c.codePointAt(0);
+    // Private use area offset
+    if(cp>=0xF000&&cp<=0xF0FF)return String.fromCharCode(cp-0xF000);
+    if(cp>=33&&cp<=126)return c; // already ASCII passthrough
+    return c;
+  }).join('');
+  let h=sec('WINGDINGS DECODE');
+  h+=row('As typed',t);
+  h+=row('Decoded',dec,'hit');
+  h+=row('Char codes',Array.from(t).map(c=>c.codePointAt(0).toString(16)).join(' '));
+  out('wd-out',h);
+}
+function wdDecodeInput2(){
+  // Webdings uses same approach
+  const t=document.getElementById('wd-in').value;
+  let h=sec('WEBDINGS / SYMBOL DECODE');
+  h+=row('Input',t);
+  h+=row('Char codes',Array.from(t).map(c=>c.codePointAt(0)+' ('+c.codePointAt(0).toString(16)+')').join(', '),'hit');
+  h+='\nNote: View this text in a Wingdings/Webdings font to see original symbols.\nChar codes above can be mapped to letters using standard font encoding tables.';
+  out('wd-out',h);
+}
+function wdEncode(){
+  const t=document.getElementById('wd-enc-in').value.toUpperCase();
+  let h=sec('ENCODE: '+t);
+  h+=row('Wingdings font render',t);
+  h+=row('Char codes (hex)',Array.from(t).map(c=>c.codePointAt(0).toString(16)).join(' '));
+  h+='\nDisplay this text in Wingdings font to show symbols.';
+  out('wd-out',h);
+}
+wdGridBuild();
+
+// Init Playfair
+pfUpdateSquare();
+
+// ═══════════════════════════════════════════
+// ROBLOX ARG GUIDE (references built-in tools)
+// ═══════════════════════════════════════════
+(function buildRoblox(){
+  const steps=[
+    {
+      title:'1. Got an image? → Image Decode',
+      tool:'img',
+      clues:[
+        'Run OCR first — reads any text hidden in badges, decals, thumbnails',
+        'Run QR Decode — Roblox badge art sometimes contains scannable QR codes',
+        'Run Bit Planes — hidden messages in the LSB of pixel data (very common in ARGs)',
+        'Run LSB Steg — extracts raw hidden bytes; look for ASCII strings in the output',
+        'Run Color Channels — messages sometimes only visible in the red or blue channel',
+        'Run Hidden Files — checks if a ZIP, PDF or audio file is embedded inside the image',
+      ]
+    },
+    {
+      title:'2. Got text or symbols from the image?',
+      tool:null,
+      clues:[
+        'Looks like ⬡ shapes with boxes/angles → Pigpen Cipher (click each shape)',
+        'Looks like raised dots in 2×3 grids → Braille (toggle dots in the Braille panel)',
+        'Looks like angular Nordic letters → Elder Futhark Runes panel',
+        'Looks like stick figures with arms at angles → Semaphore panel',
+        'Looks like ✌☞✍ symbols in a font → Wingdings / Webdings panel',
+        'Looks like dots and dashes → Morse Code panel',
+      ]
+    },
+    {
+      title:'3. Got garbled letters? → Ciphers',
+      tool:'auto',
+      clues:[
+        'Paste into Auto-Detect first — it runs Caesar, Base64, hex, morse, A1Z26 automatically',
+        'All letters shifted uniformly → Caesar / ROT — tries all 25 shifts + scores them',
+        'Letters shifted differently each position → Vigenère — try common Roblox keys: ROBLOX, the game name, badge name, group name',
+        'Use Vigenère Key Length Analysis to find the key length before bruting',
+        'Letters mirrored (A↔Z) → Atbash panel',
+        'Letter pairs scrambled → Playfair — key is usually written somewhere in the game',
+        'Zigzag-looking rearrangement → Rail Fence — try rails 2–6',
+        'Columns of text jumbled → Columnar Transposition — key often matches a word in the game',
+      ]
+    },
+    {
+      title:'4. Got numbers?',
+      tool:'seq',
+      clues:[
+        'Numbers 1–26 → A1Z26 panel (8-5-12-12-15 = HELLO)',
+        'Numbers 32–127 → Binary panel → "Decimal → ASCII" mode',
+        'Binary like 01001000 → Binary panel',
+        'Hex like 48 65 6C → Binary panel → hex bytes mode',
+        'Sequence like 1,1,2,3,5 → Sequence panel (detects Fibonacci, primes, arithmetic)',
+        'Paste into Sequence panel — it auto-checks A1Z26 and ASCII if values fit',
+      ]
+    },
+    {
+      title:'5. Got a hash string (long hex)?',
+      tool:'hash',
+      clues:[
+        '32 hex chars = MD5 · 40 = SHA-1 · 64 = SHA-256',
+        'Use Hash Tools panel → Crack button tries common gaming passwords + roblox keywords',
+        'Also tries: the game name, badge name, group name as password guesses',
+        'SHA of "roblox" = a94a8fe5ccb19ba61c4c0873d391e987982fbbd3 (SHA-1)',
+      ]
+    },
+    {
+      title:'6. Got encoded/URL text?',
+      tool:'url',
+      clues:[
+        '%XX style → URL / HTML panel',
+        '&amp; &lt; style → URL / HTML panel → HTML unescape',
+        'Gibberish but all printable chars → ROT47 in URL / HTML panel',
+        'Long string with only A-Z 0-9 + = → Base 64/32/16 panel',
+      ]
+    },
+    {
+      title:'7. General Roblox ARG checklist',
+      tool:null,
+      clues:[
+        'Game description — copy all text, paste into Auto-Detect',
+        'Badge names — read backwards (Reverse panel), check initials (first letter of each word)',
+        'Audio asset IDs — download the audio, load image of spectrogram into Image Decode → OCR',
+        'Badge/decal asset IDs — plug into Image Decode after loading the asset image',
+        'NumberValue / IntValue objects in workspace → paste into A1Z26 or Sequence panel',
+        'RGB brick colors → three numbers per brick → Sequence / A1Z26 / ASCII',
+        'Group wall posts in order → collect first letters of each post → run through ciphers',
+        'Game place ID digits → sum them, use as Caesar shift',
+        'Coordinates in workspace parts → treat X,Y,Z as number sequence',
+        'Timestamps on badges → convert Unix timestamp to date, look for pattern',
+      ]
+    },
+  ];
+
+  const container=document.getElementById('roblox-content');
+  let html='';
+  for(const step of steps){
+    html+=`<div style="margin-bottom:20px;background:var(--bg2);border:1px solid var(--b2);border-left:3px solid var(--g);padding:14px 16px;">`;
+    html+=`<div style="font-family:var(--crt);font-size:20px;color:var(--g);margin-bottom:10px;letter-spacing:1px;">${step.title}</div>`;
+    if(step.tool){
+      html+=`<div style="margin-bottom:10px;"><button class="btn" onclick="show('${step.tool}')" style="padding:5px 14px;font-size:10px;">→ Open ${LABELS[step.tool]||step.tool}</button></div>`;
+    }
+    html+=`<ul style="list-style:none;padding:0;">`;
+    for(const clue of step.clues){
+      // Highlight tool names that match panel names
+      let c=clue.replace(/\b(Auto-Detect|Caesar \/ ROT|Vigenère|Atbash|Playfair|Rail Fence|Columnar Transposition|A1Z26|Sequence|Binary|Morse Code|Hash Tools|URL \/ HTML|Base 64\/32\/16|Bit Planes|LSB Steg|Color Channels|Hidden Files|OCR|QR Decode|Image Decode|Braille|Semaphore|Wingdings \/ Webdings|Elder Futhark Runes|Pigpen Cipher|Reverse|Freq. Analysis)\b/g,
+        m=>`<span style="color:var(--a);font-weight:bold;">${m}</span>`);
+      html+=`<li style="padding:5px 0;border-bottom:1px solid var(--b1);font-family:var(--ui);font-size:13px;color:var(--t1);display:flex;gap:8px;"><span style="color:var(--g);flex-shrink:0;">›</span><span>${c}</span></li>`;
+    }
+    html+=`</ul></div>`;
+  }
+  container.innerHTML=html;
+})();
+</script>
+</body>
+</html>

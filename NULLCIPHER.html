@@ -638,24 +638,9 @@ hr.dv{border:none;border-top:1px solid var(--b1);margin:16px 0;}
       <div class="copy-row"><button class="cbtn" onclick="cp('hash-out')">copy output</button></div>
     </div>
 
-  </div><!-- /pa -->
     <!-- ══ ROBLOX ARG ══ -->
     <div class="panel" id="panel-roblox">
-      <div class="ph"><div class="pt">ROBLOX ARG</div><div class="ps">Lookup tools + guide for cracking Roblox ARGs</div></div>
-
-      <div style="background:var(--bg2);border:1px solid var(--b2);border-left:3px solid var(--a);padding:14px 16px;margin-bottom:20px;">
-        <div style="font-family:var(--crt);font-size:22px;color:var(--a);letter-spacing:1px;margin-bottom:12px;">PLACE ID \u2192 UNIVERSE ID</div>
-        <div class="field">
-          <label>Place ID</label>
-          <input type="text" id="rbx-placeid" placeholder="e.g. 1818" oninput="rbxClear()">
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-a" onclick="rbxLookup()">LOOKUP UNIVERSE</button>
-          <button class="btn btn-r" onclick="rbxClear()">\u2715 Clear</button>
-        </div>
-        <div id="rbx-out" class="out" style="border-left-color:var(--a);margin-top:12px;"></div>
-      </div>
-
+      <div class="ph"><div class="pt">ROBLOX ARG</div><div class="ps">Guide for cracking Roblox ARGs</div></div>
       <div id="roblox-content"></div>
     </div>
 
@@ -667,7 +652,7 @@ hr.dv{border:none;border-top:1px solid var(--b1);margin:16px 0;}
         <div style="font-family:var(--crt);font-size:22px;color:var(--a);letter-spacing:1px;margin-bottom:14px;">PLACE ID → UNIVERSE ID</div>
         <div class="field">
           <label>Enter Place ID</label>
-          <input type="text" id="rbx-placeid" placeholder="e.g. 1818">
+          <input type="text" id="rbx-placeid" placeholder="e.g. 142823291" onkeydown="if(event.key==='Enter')rbxLookup()">
         </div>
         <div class="btn-row" style="margin-top:8px;">
           <button class="btn btn-a" onclick="rbxLookup()">LOOKUP UNIVERSE</button>
@@ -677,6 +662,7 @@ hr.dv{border:none;border-top:1px solid var(--b1);margin:16px 0;}
       </div>
     </div>
 
+  </div><!-- /pa -->
 </div><!-- /main -->
 </div><!-- /shell -->
 
@@ -1784,42 +1770,63 @@ async function rbxLookup() {
     out('rbx-out', row('Error', 'Enter a valid numeric Place ID', 'warn'));
     return;
   }
+
+  // File:// protocol blocks ALL external fetch — must be served from http/https
+  if (location.protocol === 'file:') {
+    let h = row('Cannot run from file://', 'Browser blocks all external requests when a file is opened directly.', 'warn');
+    h += '\n<span class="dim">Fix: open this file through a local server or host it on GitHub Pages.\n';
+    h += 'On GitHub Pages the lookup will work automatically.</span>';
+    out('rbx-out', h);
+    return;
+  }
+
   out('rbx-out', '<span class="blink dim">fetching\u2026</span>');
   document.getElementById('rbx-out').classList.add('on');
-  const directUrl = 'https://apis.roblox.com/universes/v1/places/' + pid + '/universe';
-  const proxies = [
-    'https://corsproxy.io/?' + encodeURIComponent(directUrl),
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(directUrl),
-    directUrl
-  ];
-  let lastErr = '';
-  for (const url of proxies) {
-    try {
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!res.ok) {
-        if (res.status === 404) {
-          out('rbx-out', row('Error', 'Place ID ' + pid + ' not found on Roblox', 'warn'));
-          return;
-        }
-        lastErr = 'HTTP ' + res.status;
-        continue;
+
+  // Try endpoint 1: games.roblox.com (used by Roblox website, CORS-friendly)
+  try {
+    const res = await fetch(
+      'https://games.roblox.com/v1/games/multiget-place-details?placeIds=' + pid,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (res.ok) {
+      const arr = await res.json();
+      if (arr && arr.length && arr[0].universeId) {
+        return rbxShowResult(pid, arr[0].universeId, arr[0].name || '');
       }
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch(e) { lastErr = 'Bad JSON: ' + text.slice(0,80); continue; }
-      const uid = data.universeId;
-      if (!uid) { lastErr = 'No universeId in response: ' + JSON.stringify(data); continue; }
-      let h = sec('RESULT');
-      h += row('Place ID', pid, 'hit');
-      h += row('Universe ID', String(uid), 'hit');
-      h += '\n';
-      h += '<span class="dim">Game URL   </span><span style="color:var(--bl)">https://www.roblox.com/games/' + uid + '</span>\n';
-      h += '<span class="dim">Games API  </span><span style="color:var(--bl)">https://games.roblox.com/v1/games?universeIds=' + uid + '</span>\n';
-      out('rbx-out', h);
-      return;
-    } catch(e) { lastErr = e.message; }
-  }
-  out('rbx-out', row('Error', 'Request failed: ' + lastErr, 'warn'));
+    }
+  } catch(e) {}
+
+  // Try endpoint 2: older api.roblox.com (different CORS policy, may succeed where games.roblox.com fails)
+  try {
+    const res = await fetch(
+      'https://api.roblox.com/universes/get-universe-containing-place?placeId=' + pid,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.Id) {
+        return rbxShowResult(pid, data.Id, data.Name || '');
+      }
+    }
+  } catch(e) {}
+
+  // Both failed — CORS is blocking even from http
+  let h = row('Failed', 'Roblox API blocked this request (CORS)', 'warn');
+  h += '\n<span class="dim">This lookup only works when the file is served over HTTPS,\n';
+  h += 'e.g. hosted on GitHub Pages (https://yourname.github.io/...).</span>';
+  out('rbx-out', h);
+}
+
+function rbxShowResult(pid, uid, name) {
+  let h = sec('RESULT');
+  h += row('Place ID', pid, 'hit');
+  h += row('Universe ID', String(uid), 'hit');
+  if (name) h += row('Game Name', name);
+  h += '\n';
+  h += '<span class="dim">Game URL   </span><span style="color:var(--bl)">https://www.roblox.com/games/' + uid + '</span>\n';
+  h += '<span class="dim">Games API  </span><span style="color:var(--bl)">https://games.roblox.com/v1/games?universeIds=' + uid + '</span>\n';
+  out('rbx-out', h);
 }
 function rbxReset() {
   const inp = document.getElementById('rbx-placeid');
